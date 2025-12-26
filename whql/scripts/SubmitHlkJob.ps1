@@ -281,3 +281,28 @@ try {
         $message = @"
 ✅ **Submission Successful!**
 
+```
+
+$stdout
+
+```
+"@
+        New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
+    } else {
+        $msg = "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
+        throw $msg
+    }
+}
+catch {
+    $errorMsg = $_.Exception.Message
+    Write-Host "::error::$errorMsg"
+
+    try {
+        $failMessage = "❌ **Submission Failed**`n`nError: $errorMsg"
+        New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $failMessage | Out-Null
+    } catch {
+        Write-Host "Failed to post error comment: $($_.Exception.Message)"
+    }
+
+    exit 1
+}
