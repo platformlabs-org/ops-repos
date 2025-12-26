@@ -18,7 +18,6 @@ jobs:
       - name: Run Submit Job
         shell: pwsh
         run: |
-          cd whql
           ./scripts/SubmitHlkJob.ps1 `
             -Repository '${{ gitea.repository }}' `
             -IssueNumber '${{ gitea.event.issue.number }}' `
