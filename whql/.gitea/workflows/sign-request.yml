@@ -1,0 +1,47 @@
+name: HLKX Sign
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  sign-hlkx:
+    # 只处理带 SIGN 标签的 issue
+    if: contains(join(gitea.event.issue.labels.*.name, ','), 'SIGN')
+    runs-on: RUNNER-WHQL
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SIGN job
+        id: prepare
+        shell: pwsh
+        run: |
+          ./scripts/PrepareHlkJob.ps1 `
+            -Mode 'SIGN' `
+            -Repository '${{ gitea.repository }}' `
+            -IssueNumber '${{ gitea.event.issue.number }}' `
+            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -NasRootPath '\\nas\labs\HLK\HLKX'
+
+      - name: Run SIGN job
+        id: run
+        shell: pwsh
+        run: |
+          ./scripts/RunHlkJob.ps1 `
+            -Mode 'SIGN' `
+            -InputHlkxFile '${{ steps.prepare.outputs.input_hlkx_file }}' `
+            -DriverProject '${{ steps.prepare.outputs.driver_project }}' `
+            -Architecture '${{ steps.prepare.outputs.architecture }}' `
+            -DriverVersion '${{ steps.prepare.outputs.driver_version }}'
+
+
+      - name: Upload signed HLKX result
+        shell: pwsh
+        run: |
+          ./scripts/PublishHlkResult.ps1 `
+            -Repository '${{ gitea.repository }}' `
+            -IssueNumber '${{ gitea.event.issue.number }}' `
+            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -FilePath '${{ steps.run.outputs.built_hlkx_path }}'

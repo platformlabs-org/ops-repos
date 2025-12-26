@@ -1,0 +1,27 @@
+name: Driver DUA
+about: Request to sign a driver
+title: "[Driver DUA]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your request! Please select the file type you need to sign.
+  - type: input
+    id: driver_version
+    attributes:
+      label: Driver Version
+      placeholder: e.g., 6637
+    validations:
+      required: true
+  - type: input
+    id: project_name
+    attributes:
+      label: Project Name
+      placeholder: e.g., Shangrila
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Attachment
+      description: Please upload a zip package here.

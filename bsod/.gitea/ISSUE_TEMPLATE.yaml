@@ -1,0 +1,37 @@
+name: BSOD Report
+about: File a BSOD report
+title: "[BSOD]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for submitting the BSOD report! Please improve the title!
+  # some markdown that will only be visible once the issue has been created
+  - type: markdown
+    attributes:
+      value: |
+        Platform Enablement Team提供支持 : )
+    visible: [content]
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@lenovo.com
+    validations:
+      required: true
+  - type: textarea
+    id: TDMSID
+    attributes:
+      label: TDMS Title
+      description: Please paste TDMS title here
+      placeholder: BSOD happens during a Benchmark test...
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Dump file upload
+      description: Please upload .dmp/.zip files. (Only 1 file allowed in this issue)
+

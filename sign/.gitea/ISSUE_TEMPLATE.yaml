@@ -1,0 +1,54 @@
+name: Driver Sign Request
+about: Request to sign a driver
+title: "[Driver Sign Request]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - 'Lenovo Driver' will sign each binary file & inf2cat. 'Other Driver' will run inf2cat only.
+        - CAB packaging is only for Attestation use. 
+        - If you choose 'Sign file', 'CAB packaging' will bypass.
+        - **Only .zip files are accepted.**
+  - type: dropdown
+    id: filetype
+    attributes:
+      label: Driver Sign Type
+      multiple: false
+      options:
+        - Lenovo Driver
+        - Other Driver
+        - Sign file
+    validations:
+      required: true
+  - type: dropdown
+    id: arctype
+    attributes:
+      label: Architecture Type
+      multiple: false
+      options:
+        - AMD64
+        - ARM64
+    validations:
+      required: true
+  - type: dropdown
+    id: cab_pack
+    attributes:
+      label: Do you need CAB packaging?
+      multiple: false
+      options:
+        - Yes
+        - No
+    validations:
+      required: false
+  - type: input
+    id: driver_version
+    attributes:
+      label: Driver Version
+      placeholder: e.g., v1.0.0
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Attachment
+      description: Please upload a zip package here.

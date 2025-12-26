@@ -1,0 +1,53 @@
+name: HLKX Sign Request
+about: Request to sign an existing HLKX package
+title: "[HLKX Sign Request]: "
+labels:
+  - SIGN
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template is for **signing existing HLKX** packages.
+
+        - Please upload one or more **HLKX files** as attachments **after** creating this issue.
+        - The system will:
+          - Sign each HLKX
+          - Attach the signed HLKX back to this issue
+        - Driver project / architecture / version are optional and only used for tracking.
+
+  - type: input
+    id: driver_project
+    attributes:
+      label: Driver Project
+      placeholder: e.g., Dispatcher
+    validations:
+      required: false
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Architecture
+      multiple: false
+      options:
+        - AMD64
+        - ARM64
+    validations:
+      required: false
+
+  - type: input
+    id: driver_version
+    attributes:
+      label: Driver Version
+      placeholder: e.g., 3.2.0.12
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: |
+        Add any additional information here.
+
+        **Important:** upload your HLKX as an issue attachment after creating this issue.

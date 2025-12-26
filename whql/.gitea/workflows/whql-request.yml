@@ -1,0 +1,48 @@
+name: WHQL HLKX Build
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  whql-build:
+    # 只处理带 WHQL 标签的 issue
+    if: contains(join(gitea.event.issue.labels.*.name, ','), 'WHQL')
+    runs-on: RUNNER-WHQL
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare WHQL job
+        id: prepare
+        shell: pwsh
+        run: |
+          ./scripts/PrepareHlkJob.ps1 `
+            -Mode 'WHQL' `
+            -Repository '${{ gitea.repository }}' `
+            -IssueNumber '${{ gitea.event.issue.number }}' `
+            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -NasRootPath '\\nas\labs\HLK\HLKX'
+            
+      - name: Run WHQL build
+        id: run
+        shell: pwsh
+        run: |
+          ./scripts/RunHlkJob.ps1 `
+            -Mode 'WHQL' `
+            -TemplateFolder '${{ steps.prepare.outputs.hlkx_template_folder }}' `
+            -InputHlkxFile '' `
+            -DriverFolder '${{ steps.prepare.outputs.driver_folder }}' `
+            -DriverProject '${{ steps.prepare.outputs.driver_project }}' `
+            -Architecture '${{ steps.prepare.outputs.architecture }}' `
+            -DriverVersion '${{ steps.prepare.outputs.driver_version }}'
+
+      - name: Upload WHQL HLKX result
+        shell: pwsh
+        run: |
+          ./scripts/PublishHlkResult.ps1 `
+            -Repository '${{ gitea.repository }}' `
+            -IssueNumber '${{ gitea.event.issue.number }}' `
+            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -FilePath '${{ steps.run.outputs.built_hlkx_path }}'

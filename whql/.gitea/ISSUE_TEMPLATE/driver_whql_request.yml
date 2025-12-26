@@ -1,0 +1,63 @@
+name: Driver WHQL Request
+about: Request to build and sign a WHQL HLKX package from a driver package
+title: "[Driver WHQL Request]: "
+labels:
+  - WHQL
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template is for **WHQL HLKX build** requests.
+
+        - Please select the driver project and architecture.
+        - Please upload a **driver package (.zip)** as an attachment **after** creating this issue.
+        - The system will:
+          - Merge all template HLKX for the selected project + architecture
+          - Inject your driver
+          - Sign the final HLKX
+          - Attach the result back to this issue
+
+  - type: dropdown
+    id: driver_project
+    attributes:
+      label: Driver Project
+      multiple: false
+      options:
+        - Dispatcher
+        - SensorFusion
+        - DisplayEnhancement
+        - HDRDisplay
+        - AIFW
+        - Tap-to-X
+        - VirtualDisplay
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Architecture
+      multiple: false
+      options:
+        - AMD64
+        - ARM64
+    validations:
+      required: true
+
+  - type: input
+    id: driver_version
+    attributes:
+      label: Driver Version
+      placeholder: e.g., 3.2.0.12
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: |
+        Add any additional information here.
+
+        **Important:** upload your driver package (.zip) as an issue attachment after creating this issue.

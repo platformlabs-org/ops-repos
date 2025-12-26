@@ -1,0 +1,39 @@
+name: BSOD Pipeline
+
+on:
+  issues:
+    types: [opened, reopened]
+
+  #issue_comment:
+    #types: [created]
+
+jobs:
+  run:
+
+    runs-on: [RUNNER-BSOD-HF]
+
+    env:
+      ISSUE_ID: ${{ gitea.event.issue.number }}
+      REPO_PATH: ${{ gitea.repository }}
+
+      OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+
+      AI_TOKEN: ${{ secrets.AI_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: https://gitea.com/actions/checkout@v4
+
+      - name: Validate env
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:OPS_TOKEN)) { throw "Missing OPS_TOKEN secret" }
+          Write-Host "ISSUE_ID=$env:ISSUE_ID"
+          Write-Host "REPO_PATH=$env:REPO_PATH"
+
+      - name: Run pipeline (All)
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          .\scripts\cli.ps1 -Phase All

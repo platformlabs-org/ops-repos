@@ -1,0 +1,48 @@
+name: Driver Sign Workflow
+
+on:
+  issues:
+    types: [opened, reopened]
+
+env:
+  ISSUE_ID: ${{ gitea.event.issue.number }}
+  WORK_DIR: ./unzipped
+  OUTPUT_DIR: ./output
+
+jobs:
+  driver-sign:
+    runs-on: [RUNNER-WHQL]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check attachment format
+        run: |
+          pwsh ./scripts/pre-check.ps1
+
+      - name: Download and extract attachment
+        run: |
+          pwsh ./scripts/download-and-extract.ps1
+
+      - name: Signature
+        if: ${{ env.SIGN_TYPE == 'Lenovo Driver' || env.SIGN_TYPE == 'Sign file' }}
+        run: |
+          pwsh ./scripts/sign-files.ps1
+
+      - name: Generate CAT file
+        if: ${{ env.SIGN_TYPE == 'Lenovo Driver' || env.SIGN_TYPE == 'Other Driver' }}
+        run: |
+          pwsh ./scripts/inf2cat.ps1
+
+      - name: Generate CAB package
+        if: ${{ env.NEED_CAB == 'Yes' && env.SIGN_TYPE != 'Sign file' }}
+        run: |
+          pwsh ./scripts/make-cab.ps1
+
+      - name: Archive output
+        run: |
+          pwsh ./scripts/archive-output.ps1
+
+      - name: Issue update
+        run: |
+          pwsh ./scripts/update-issue.ps1
