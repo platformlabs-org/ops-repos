@@ -1,0 +1,51 @@
+{
+  "project": {
+    "kailash": {
+      "gfx": {
+        "base": {
+          "dev_id": [""],
+          "subsys_id": ["380217AA"]
+        },
+        "extension": {
+          "dev_id": [""],
+          "subsys_id": ["380217AA"],
+          "extension_id": "95ef04a6-7a50-41a6-8241-4e010c30570a"
+        }
+      },
+      "npu": {
+        "extension":{
+            "dev_id": ["B03E"],
+            "subsys_id": ["380217AA"],
+            "extension_id": "2894ef33-7f17-4b92-aaa9-545a600dd414"
+        }
+      }
+    },
+    "chogori": {
+      "gfx": {
+        "base": {
+          "dev_id": ["B0A0"],
+          "subsys_id": ["380117AA"]
+        },
+        "extension": {
+          "dev_id": ["B0A0"],
+          "subsys_id": ["380117AA"],
+          "extension_id": "af98a121-f688-4807-b969-40d9ffadc8d3",
+          "register_function": {
+            "Brightness_Feature_AddSwSettings": [
+              ["ParadeMuxEdpLinkRateDataReloadTrigger", "d", 1],
+              ["LFP_NitRanges_FFFF", "d", 1],
+              ["LFP_NitRanges_4c833d423d0000000023", "b", "8813000020A10700E8030000"],
+              ["LFP_NitRanges_4c833242320000000023", "b", "8813000040420F00E8030000"],
+              ["LFP_NitRangeCount_4c833d423d0000000023", "d", "0x101"],
+              ["LFP_NitRangeCount_4c833242320000000023", "d", "0x101"]
+            ],
+            "AddEdp10BitModeOverride": [
+              ["OverrideOutputFormatPersistance_800050_4c833d423d0000000023", "b", "00000000010008000E00020002000000"],
+              ["OverrideOutputFormatPersistance_800050_4c833242320000000023", "b", "00000000010008000E00020002000000"]
+            ]
+          }
+        }
+      }
+    }
+  }
+}
