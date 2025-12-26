@@ -115,43 +115,14 @@ function Get-LatestHlkxFromBotComments {
     return ($candidates | Sort-Object Created -Descending | Select-Object -First 1)
 }
 
-function Build-ProcessStartInfo {
-    param(
-        [string]$ExePath,
-        [string[]]$Args
-    )
-
-    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-    $pinfo.FileName = $ExePath
-    $pinfo.RedirectStandardOutput = $true
-    $pinfo.RedirectStandardError  = $true
-    $pinfo.UseShellExecute        = $false
-
-    # 优先用 ArgumentList（pwsh/.NET Core 环境更稳），否则退回 Arguments 字符串
-    $useArgList = $false
-    try {
-        $null = $pinfo.ArgumentList
-        $useArgList = $true
-    } catch {
-        $useArgList = $false
+# 把参数安全转成命令行片段：有空格/引号就加双引号，并转义内部引号
+function Quote-Arg {
+    param([string]$s)
+    if ($null -eq $s) { return '""' }
+    if ($s -match '[\s"]') {
+        return '"' + ($s -replace '"','\"') + '"'
     }
-
-    if ($useArgList) {
-        foreach ($a in $Args) { [void]$pinfo.ArgumentList.Add($a) }
-    } else {
-        # 退回：构造命令行字符串（对包含空格/引号的参数做保护）
-        $quote = {
-            param([string]$s)
-            if ($null -eq $s) { return '""' }
-            if ($s -match '[\s"]') {
-                return '"' + ($s -replace '"','\"') + '"'
-            }
-            return $s
-        }
-        $pinfo.Arguments = ($Args | ForEach-Object { & $quote $_ }) -join ' '
-    }
-
-    return $pinfo
+    return $s
 }
 
 try {
@@ -244,30 +215,30 @@ try {
         }
     }
 
-    # 8) 执行 submit（替换原来的 ProcessStartInfo + ReadToEnd 那一段）
+    # 8) 执行 submit —— 关键修改：自己拼带引号的单字符串 ArgumentList
+    $driverName = "$driverProject $driverVersion"
 
-    $hlkxArgs = @(
+    $argLine = @(
         "submit"
-        "--hlkx", $localHlkxPath
-        "--to", $submitterEmail
-        "--driver-name", "$driverProject $driverVersion"
+        "--hlkx",        (Quote-Arg $localHlkxPath)
+        "--to",          (Quote-Arg $submitterEmail)
+        "--driver-name", (Quote-Arg $driverName)
         "--driver-type", "WHQL"
-        "--fw", $driverVersion
+        "--fw",          (Quote-Arg $driverVersion)
         "--yes"
         "--non-interactive"
-    )
+    ) -join ' '
 
-    Write-Host "[Submit] Running: $hlkxTool $($hlkxArgs -join ' ')"
+    Write-Host "[Submit] Running: $hlkxTool $argLine"
 
     $stdoutFile = Join-Path $tempDir "hlkxtool_stdout.txt"
     $stderrFile = Join-Path $tempDir "hlkxtool_stderr.txt"
 
-    # 清理旧文件
     if (Test-Path $stdoutFile) { Remove-Item $stdoutFile -Force }
     if (Test-Path $stderrFile) { Remove-Item $stderrFile -Force }
 
     $p = Start-Process -FilePath $hlkxTool `
-                       -ArgumentList $hlkxArgs `
+                       -ArgumentList $argLine `
                        -NoNewWindow `
                        -PassThru `
                        -RedirectStandardOutput $stdoutFile `
@@ -275,7 +246,6 @@ try {
 
     Write-Host "[Submit] HlkxTool started. Waiting..."
 
-    # 心跳等待（避免看起来“卡死”）
     while (-not $p.HasExited) {
         Start-Sleep -Seconds 10
         Write-Host "[Submit] ...still running (pid=$($p.Id))"
@@ -288,7 +258,14 @@ try {
     $fullOutput = "STDOUT:`n$stdout`nSTDERR:`n$stderr"
 
     if ($exitCode -eq 0) {
-        $message = "✅ **Submission Succeeded**`n`nDriver: $driverProject $driverVersion`nHLKX: $selectedHlkxName (from $selectedFrom)`n`n$stdout"
+        $message = @"
+✅ **Submission Succeeded**
+
+Driver: $driverProject $driverVersion
+HLKX: $selectedHlkxName (from $selectedFrom)
+
+$stdout
+"@
         Write-Host "[Submit] HlkxTool completed successfully."
         New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
     } else {
