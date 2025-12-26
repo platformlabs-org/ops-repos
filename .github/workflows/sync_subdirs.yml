@@ -25,7 +25,7 @@ jobs:
 
       - name: Push to remote
         env:
-          USERNAME: ${{ secrets.SYNC_USERNAME }}
+          USERNAME: bot
           TOKEN: ${{ secrets.SYNC_TOKEN }}
           TARGET_REPO: ${{ matrix.repo }}
           DIR: ${{ matrix.dir }}
@@ -54,8 +54,8 @@ jobs:
           git checkout -b main
 
           # Configure git user
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
+          git config user.email "i@terry.com"
+          git config user.name "Tianyi"
 
           # Add all files
           git add .
