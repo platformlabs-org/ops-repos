@@ -244,7 +244,8 @@ try {
         }
     }
 
-    # 8) 执行 submit
+    # 8) 执行 submit（替换原来的 ProcessStartInfo + ReadToEnd 那一段）
+
     $hlkxArgs = @(
         "submit"
         "--hlkx", $localHlkxPath
@@ -256,30 +257,41 @@ try {
         "--non-interactive"
     )
 
-    $pinfo = Build-ProcessStartInfo -ExePath $hlkxTool -Args $hlkxArgs
+    Write-Host "[Submit] Running: $hlkxTool $($hlkxArgs -join ' ')"
 
-    # 打印实际参数
-    if ($pinfo.PSObject.Properties.Name -contains "ArgumentList" -and $pinfo.ArgumentList.Count -gt 0) {
-        Write-Host "[Submit] Running: $hlkxTool $($pinfo.ArgumentList -join ' ')"
-    } else {
-        Write-Host "[Submit] Running: $hlkxTool $($pinfo.Arguments)"
+    $stdoutFile = Join-Path $tempDir "hlkxtool_stdout.txt"
+    $stderrFile = Join-Path $tempDir "hlkxtool_stderr.txt"
+
+    # 清理旧文件
+    if (Test-Path $stdoutFile) { Remove-Item $stdoutFile -Force }
+    if (Test-Path $stderrFile) { Remove-Item $stderrFile -Force }
+
+    $p = Start-Process -FilePath $hlkxTool `
+                       -ArgumentList $hlkxArgs `
+                       -NoNewWindow `
+                       -PassThru `
+                       -RedirectStandardOutput $stdoutFile `
+                       -RedirectStandardError  $stderrFile
+
+    Write-Host "[Submit] HlkxTool started. Waiting..."
+
+    # 心跳等待（避免看起来“卡死”）
+    while (-not $p.HasExited) {
+        Start-Sleep -Seconds 10
+        Write-Host "[Submit] ...still running (pid=$($p.Id))"
     }
 
-    $p = New-Object System.Diagnostics.Process
-    $p.StartInfo = $pinfo
-    $p.Start() | Out-Null
-
-    $stdout = $p.StandardOutput.ReadToEnd()
-    $stderr = $p.StandardError.ReadToEnd()
-
-    $p.WaitForExit()
-
     $exitCode = $p.ExitCode
+    $stdout = if (Test-Path $stdoutFile) { Get-Content -Raw $stdoutFile } else { "" }
+    $stderr = if (Test-Path $stderrFile) { Get-Content -Raw $stderrFile } else { "" }
+
     $fullOutput = "STDOUT:`n$stdout`nSTDERR:`n$stderr"
 
     if ($exitCode -eq 0) {
         $message = @"
-✅ **Submission Successful!**
+    ✅ **Submission Successful!**
+
+
 
 ```
 
@@ -287,12 +299,13 @@ $stdout
 
 ```
 "@
-        New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
-    } else {
-        $msg = "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
-        throw $msg
-    }
+    New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
 }
+else {
+    $msg = "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
+    throw $msg
+}
+
 catch {
     $errorMsg = $_.Exception.Message
     Write-Host "::error::$errorMsg"
