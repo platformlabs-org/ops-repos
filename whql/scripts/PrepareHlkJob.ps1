@@ -8,7 +8,7 @@ param(
     [Parameter(Mandatory)]
     [string]$AccessToken,
     [Parameter(Mandatory)]
-    [string]$NasRootPath
+    [string]$HlkxRootPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -172,7 +172,7 @@ switch ($normalizedMode) {
         $mappedProject  = Map-DriverProjectName   -Project $driverProject
         $archFolder     = Map-ArchitectureFolder  -Architecture $architecture
 
-        $hlkxTemplateFolder = Join-Path $NasRootPath (Join-Path $mappedProject $archFolder)
+        $hlkxTemplateFolder = Join-Path $HlkxRootPath (Join-Path $mappedProject $archFolder)
         Write-Host "[Prepare] MODE = WHQL"
         Write-Host "[Prepare] HLKX template folder: $hlkxTemplateFolder"
 

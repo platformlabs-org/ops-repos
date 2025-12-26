@@ -23,7 +23,7 @@ jobs:
             -Repository '${{ gitea.repository }}' `
             -IssueNumber '${{ gitea.event.issue.number }}' `
             -AccessToken '${{ secrets.BOTTOKEN }}' `
-            -NasRootPath '\\nas\labs\HLK\HLKX'
+            -HlkxRootPath '\\nas\labs\HLK\HLKX'
 
       - name: Run SIGN job
         id: run
