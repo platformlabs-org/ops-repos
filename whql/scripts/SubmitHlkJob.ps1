@@ -288,17 +288,8 @@ try {
     $fullOutput = "STDOUT:`n$stdout`nSTDERR:`n$stderr"
 
     if ($exitCode -eq 0) {
-        $message = @"
-    ✅ **Submission Successful!**
-
-
-
-```
-
-$stdout
-
-```
-"@
+        $message = "✅ **Submission Succeeded**`n`nDriver: $driverProject $driverVersion`nHLKX: $selectedHlkxName (from $selectedFrom)`n`n$stdout"
+        Write-Host "[Submit] HlkxTool completed successfully."
     New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
 }
 else {
