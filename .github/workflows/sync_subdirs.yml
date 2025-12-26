@@ -1,0 +1,58 @@
+name: Sync Subdirectories
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dir: whql
+            repo: ops.platformlabs.lenovo.com/platform-drivers/whql
+          - dir: dua
+            repo: ops.platformlabs.lenovo.com/platform-drivers/dua
+          - dir: sign
+            repo: ops.platformlabs.lenovo.com/platform-drivers/sign
+          - dir: bsod
+            repo: ops.platformlabs.lenovo.com/workflows/bsod
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push to remote
+        env:
+          USERNAME: ${{ secrets.SYNC_USERNAME }}
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+          TARGET_REPO: ${{ matrix.repo }}
+          DIR: ${{ matrix.dir }}
+        run: |
+          # Configure git
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          # Split the subdirectory into a new branch
+          SPLIT_BRANCH="split-${DIR}"
+
+          # Check if directory exists
+          if [ ! -d "$DIR" ]; then
+            echo "Directory $DIR does not exist. Skipping."
+            exit 0
+          fi
+
+          echo "Splitting $DIR into $SPLIT_BRANCH"
+          git subtree split --prefix="$DIR" -b "$SPLIT_BRANCH"
+
+          # Construct the remote URL with credentials
+          # User requested format: username:token@ops.xxx....com
+          REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
+
+          echo "Pushing to $TARGET_REPO"
+          # Pushing to main branch on the target repository.
+          # Using --force to sync the state of the subdirectory to the remote repo.
+          git push "$REMOTE_URL" "$SPLIT_BRANCH":main --force
