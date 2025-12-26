@@ -38,13 +38,13 @@ function Map-DriverProjectName {
     param([string]$Project)
 
     $map = @{
-        'Dispatcher'         = 'Dispatcher3.1.x'
-        'SensorFusion'       = 'SensorFusion2.0.0.x'
-        'DisplayEnhancement' = 'DisplayEnhancement0.1.0.x'
-        'HDRDisplay'         = 'HDRDisplay'
-        'AIFW'               = 'AIFW'
-        'Tap-to-X'           = 'Tap-to-X'
-        'VirtualDisplay'     = 'VirtualDisplay'
+        'Lenovo Dispatcher'         = 'Dispatcher3.1.x'
+        'Lenovo SensorFusion'       = 'SensorFusion2.0.0.x'
+        'Lenovo DisplayEnhancement' = 'DisplayEnhancement0.1.0.x'
+        'Lenovo Monitor'            = 'HDRDisplay'
+        'Lenovo AIFW Service'       = 'AIFW'
+        'Lenovo Tap-to-X Service'   = 'Tap-to-X'
+        'Lenovo VirtualDisplay'     = 'VirtualDisplay'
     }
 
     if ($map.ContainsKey($Project)) {

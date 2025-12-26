@@ -24,13 +24,13 @@ body:
       label: Driver Project
       multiple: false
       options:
-        - Dispatcher
-        - SensorFusion
-        - DisplayEnhancement
-        - HDRDisplay
-        - AIFW
-        - Tap-to-X
-        - VirtualDisplay
+        - Lenovo Dispatcher
+        - Lenovo SensorFusion
+        - Lenovo DisplayEnhancement
+        - Lenovo Monitor
+        - Lenovo AIFW Service
+        - Lenovo Tap-to-X Service
+        - Lenovo VirtualDisplay
     validations:
       required: true
 
