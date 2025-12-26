@@ -55,7 +55,7 @@ $timestamp = Get-Date -Format "MMddHHmmss"
 
 $outputFileName  = ""
 $outputFullPath  = $null
-$autoHlkArgs     = @()
+$hlkxToolArgs    = @()
 
 switch ($Mode.ToUpperInvariant()) {
     'WHQL' {
@@ -86,8 +86,8 @@ switch ($Mode.ToUpperInvariant()) {
         $outputFileName = "$safeName.hlkx"
         $outputFullPath = Join-Path $outDir $outputFileName
 
-        # 把完整路径传给 AutoHLK
-        $autoHlkArgs = @('WHQL', $TemplateFolder, $DriverFolder, $outputFullPath)
+        # 把完整路径传给 HlkxTool
+        $hlkxToolArgs = @('WHQL', $TemplateFolder, $DriverFolder, $outputFullPath)
     }
     'SIGN' {
         if (-not (Test-Path $InputHlkxFile)) {
@@ -101,7 +101,7 @@ switch ($Mode.ToUpperInvariant()) {
         $outputFileName = "${safeBaseName}_Signed.hlkx"
         $outputFullPath = Join-Path $outDir $outputFileName
 
-        $autoHlkArgs = @('SIGN', $InputHlkxFile, '', $outputFullPath)
+        $hlkxToolArgs = @('SIGN', $InputHlkxFile, '', $outputFullPath)
     }
     default {
         throw "[Run] Unsupported mode: $Mode"
@@ -109,11 +109,11 @@ switch ($Mode.ToUpperInvariant()) {
 }
 
 Write-Host "[Run] Output HLKX file: $outputFullPath"
-Write-Host "[Run] Running AutoHLK.exe $($autoHlkArgs -join ' ')"
+Write-Host "[Run] Running HlkxTool.exe $($hlkxToolArgs -join ' ')"
 
-& .\AutoHLK\AutoHLK.exe @autoHlkArgs
+& .\HlkxTool\HlkxTool.exe @hlkxToolArgs
 if ($LASTEXITCODE -ne 0) {
-    throw "[Run] AutoHLK.exe failed with exit code $LASTEXITCODE"
+    throw "[Run] HlkxTool.exe failed with exit code $LASTEXITCODE"
 }
 
 if (-not (Test-Path $outputFullPath)) {
