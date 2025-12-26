@@ -290,13 +290,12 @@ try {
     if ($exitCode -eq 0) {
         $message = "✅ **Submission Succeeded**`n`nDriver: $driverProject $driverVersion`nHLKX: $selectedHlkxName (from $selectedFrom)`n`n$stdout"
         Write-Host "[Submit] HlkxTool completed successfully."
-    New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
+        New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
+    } else {
+        $msg = "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
+        throw $msg
+    }
 }
-else {
-    $msg = "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
-    throw $msg
-}
-
 catch {
     $errorMsg = $_.Exception.Message
     Write-Host "::error::$errorMsg"
