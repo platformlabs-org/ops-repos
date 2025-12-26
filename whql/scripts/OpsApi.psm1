@@ -35,6 +35,24 @@ function Get-OpsIssue {
     return $response.Content | ConvertFrom-Json
 }
 
+function Get-OpsIssueComments {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Repo,
+        [Parameter(Mandatory)]
+        [string]$Number,
+        [Parameter(Mandatory)]
+        [string]$Token
+    )
+
+    $url = "$Script:BaseUrl/$Repo/issues/$Number/comments"
+    $headers = New-OpsAuthHeader -Token $Token
+
+    Write-Host "[OpsApi] GET comments for issue $Number"
+    $response = Invoke-WebRequest -Uri $url -Headers $headers -Method Get
+    return $response.Content | ConvertFrom-Json
+}
+
 function Invoke-OpsDownloadFile {
     param(
         [Parameter(Mandatory)]
@@ -142,6 +160,7 @@ function Set-OpsIssueTitle {
 
 Export-ModuleMember -Function `
     Get-OpsIssue, `
+    Get-OpsIssueComments, `
     Invoke-OpsDownloadFile, `
     New-OpsIssueComment, `
     Upload-OpsCommentAttachment, `

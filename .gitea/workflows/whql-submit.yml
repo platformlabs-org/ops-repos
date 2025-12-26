@@ -1,0 +1,25 @@
+name: WHQL HLKX Submit
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  whql-submit:
+    # 1. 评论内容以 /submit 开头
+    # 2. Issue 必须包含 WHQL 标签
+    if: startsWith(gitea.event.comment.body, '/submit') && contains(join(gitea.event.issue.labels.*.name, ','), 'WHQL')
+    runs-on: RUNNER-WHQL
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Submit Job
+        shell: pwsh
+        run: |
+          cd whql
+          ./scripts/SubmitHlkJob.ps1 `
+            -Repository '${{ gitea.repository }}' `
+            -IssueNumber '${{ gitea.event.issue.number }}' `
+            -AccessToken '${{ secrets.BOTTOKEN }}'
