@@ -22,8 +22,6 @@ jobs:
             repo: ops.platformlabs.lenovo.com/workflows/bsod
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Push to remote
         env:
@@ -32,27 +30,43 @@ jobs:
           TARGET_REPO: ${{ matrix.repo }}
           DIR: ${{ matrix.dir }}
         run: |
-          # Configure git
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-
-          # Split the subdirectory into a new branch
-          SPLIT_BRANCH="split-${DIR}"
-
           # Check if directory exists
           if [ ! -d "$DIR" ]; then
             echo "Directory $DIR does not exist. Skipping."
             exit 0
           fi
 
-          echo "Splitting $DIR into $SPLIT_BRANCH"
-          git subtree split --prefix="$DIR" -b "$SPLIT_BRANCH"
+          echo "Syncing $DIR to $TARGET_REPO"
+
+          # Create a temporary directory for the fresh repo
+          WORK_DIR=$(mktemp -d)
+
+          # Copy contents of the subdirectory to the temporary directory
+          # Using cp -r "$DIR"/. to include hidden files
+          cp -r "$DIR"/. "$WORK_DIR"
+
+          # Switch to the temporary directory
+          cd "$WORK_DIR"
+
+          # Initialize a new git repository
+          git init
+          # Default branch name for the new repo
+          git checkout -b main
+
+          # Configure git user
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
+          # Add all files
+          git add .
+
+          # Create a fresh commit
+          # Using a generic message to avoid leaking source info
+          git commit -m "Sync content from parent repository"
 
           # Construct the remote URL with credentials
-          # User requested format: username:token@ops.xxx....com
           REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
 
           echo "Pushing to $TARGET_REPO"
-          # Pushing to main branch on the target repository.
-          # Using --force to sync the state of the subdirectory to the remote repo.
-          git push "$REMOTE_URL" "$SPLIT_BRANCH":main --force
+          # Force push to overwrite remote history with this single commit
+          git push "$REMOTE_URL" main:main --force
