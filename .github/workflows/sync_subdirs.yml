@@ -54,15 +54,15 @@ jobs:
           git checkout -b main
 
           # Configure git user
-          git config user.email "i@terry.com"
-          git config user.name "Tianyi"
+          git config user.email "i@terry.ee"
+          git config user.name "tianyi"
 
           # Add all files
           git add .
 
           # Create a fresh commit
           # Using a generic message to avoid leaking source info
-          git commit -m "Sync content from parent repository"
+          git commit -m "Sync from remote repository"
 
           # Construct the remote URL with credentials
           REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
