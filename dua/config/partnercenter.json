@@ -1,0 +1,4 @@
+{
+  "apiBaseUrl": "https://api.partner.microsoft.com/v1.0/ingestion",
+  "scope": "https://api.partner.microsoft.com/.default"
+}

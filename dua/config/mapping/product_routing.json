@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "pattern": ".*Graphic.*Base.*",
+      "pipeline": "graphic-base"
+    },
+    {
+      "pattern": ".*Graphic.*Ext.*",
+      "pipeline": "graphic-ext"
+    },
+    {
+      "pattern": ".*NPU.*",
+      "pipeline": "npu-ext"
+    }
+  ]
+}

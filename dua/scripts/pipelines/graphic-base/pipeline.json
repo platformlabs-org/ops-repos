@@ -1,0 +1,10 @@
+{
+  "pipelineName": "graphic-base",
+  "description": "Process base graphics driver",
+  "infStrategy": "graphic-base",
+  "actions": [
+    "PatchInf",
+    "ReplaceDriverInShell",
+    "PackageArtifacts"
+  ]
+}

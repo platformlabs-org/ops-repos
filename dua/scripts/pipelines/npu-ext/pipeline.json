@@ -1,0 +1,10 @@
+{
+  "pipelineName": "npu-ext",
+  "description": "Process NPU extension driver",
+  "infStrategy": "npu-ext",
+  "actions": [
+    "PatchInf",
+    "ReplaceDriverInShell",
+    "PackageArtifacts"
+  ]
+}
