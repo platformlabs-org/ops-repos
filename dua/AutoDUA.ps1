@@ -19,10 +19,10 @@ function Write-OutputVar {
     }
 }
 
-# 检查 AutoHLK.exe 是否存在
-$exe = ".\AutoHLK\AutoHLK.exe"
+# 检查 HlkxTool.exe 是否存在
+$exe = ".\HlkxTool\HlkxTool.exe"
 if (-not (Test-Path $exe)) {
-    throw "[ERROR] AutoHLK.exe not found at path: $exe"
+    throw "[ERROR] HlkxTool.exe not found at path: $exe"
 }
 
 # 检查 HLKX 目录
@@ -46,7 +46,7 @@ $savedFiles  = @()
 $failedFiles = @()
 
 Write-Host ""
-Write-Host "[INFO] Starting to process HLKX files using AutoHLK (DUA)..."
+Write-Host "[INFO] Starting to process HLKX files using HlkxTool (DUA)..."
 
 foreach ($hlkx in $hlkxFiles) {
     $hlkxPath  = $hlkx.FullName
@@ -74,7 +74,7 @@ foreach ($hlkx in $hlkxFiles) {
     $updatedName = "${baseName}_repackaged.hlkx"
     $savePath    = Join-Path $outputDir $updatedName
 
-    # 构造命令：AutoHLK.exe DUA "<hlkx>" "<driverPath>" "<savePath>"
+    # 构造命令：HlkxTool.exe DUA "<hlkx>" "<driverPath>" "<savePath>"
     $args = @(
         "DUA",
         "`"$hlkxPath`"",
@@ -82,7 +82,7 @@ foreach ($hlkx in $hlkxFiles) {
         "`"$savePath`""
     )
 
-    Write-Host "[INFO] Running AutoHLK.exe with arguments:"
+    Write-Host "[INFO] Running HlkxTool.exe with arguments:"
     Write-Host "[INFO] $exe $($args -join ' ')"
 
     try {
@@ -104,7 +104,7 @@ foreach ($hlkx in $hlkxFiles) {
         $process.WaitForExit()
 
         if ($process.ExitCode -ne 0) {
-            Write-Host "[ERROR] AutoHLK.exe exited with code $($process.ExitCode)"
+            Write-Host "[ERROR] HlkxTool.exe exited with code $($process.ExitCode)"
             if ($stdout) { Write-Host "[ERROR] StdOut:`n$stdout" }
             if ($stderr) { Write-Host "[ERROR] StdErr:`n$stderr" }
             $failedFiles += $hlkxPath
@@ -115,14 +115,14 @@ foreach ($hlkx in $hlkxFiles) {
             Write-Host "[SUCCESS] Repackaged (and signed) file: $savePath"
             $savedFiles += $savePath
         } else {
-            Write-Host "[ERROR] Output file not found after AutoHLK execution: $savePath"
+            Write-Host "[ERROR] Output file not found after HlkxTool execution: $savePath"
             if ($stdout) { Write-Host "[ERROR] StdOut:`n$stdout" }
             if ($stderr) { Write-Host "[ERROR] StdErr:`n$stderr" }
             $failedFiles += $hlkxPath
         }
     }
     catch {
-        Write-Host "[ERROR] Exception occurred while running AutoHLK.exe: $($_.Exception.Message)"
+        Write-Host "[ERROR] Exception occurred while running HlkxTool.exe: $($_.Exception.Message)"
         $failedFiles += $hlkxPath
     }
 }
