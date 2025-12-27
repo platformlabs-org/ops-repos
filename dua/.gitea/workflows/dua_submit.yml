@@ -7,16 +7,21 @@ jobs:
   submit:
     if: startsWith(github.event.comment.body, '/submit')
     runs-on: [RUNNER-WHQL]
+    env:
+      GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
+      PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Run Submit Script
+      - name: Parse Submission Info
         shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
-          PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
-          PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
-          PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
         run: |
-          ./scripts/entrypoints/Submit.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+          ./scripts/steps/Submit_1_Parse.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+
+      - name: Execute Submission
+        shell: pwsh
+        run: |
+          ./scripts/steps/Submit_2_Execute.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
