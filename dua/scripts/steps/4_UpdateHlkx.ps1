@@ -12,11 +12,10 @@ Write-Log "Step 4: Update HLKX"
 
 $hlkxPath       = $env:HLKX_PATH
 $driverRootPath = $env:DRIVER_ROOT_PATH
-$pipelineName   = $env:PIPELINE_NAME
 
 if (-not $hlkxPath -or -not $driverRootPath) { throw "Missing input env vars." }
 
-$pipelineConfigPath = Join-Path $RepoRoot "scripts\pipelines\$pipelineName\pipeline.json"
+$pipelineConfigPath = Join-Path $RepoRoot "config\pipeline.json"
 $pipelineConfig = Get-Content -Raw -LiteralPath $pipelineConfigPath | ConvertFrom-Json
 
 if ($pipelineConfig.actions -contains "ReplaceDriverInShell") {

@@ -1,3 +1,0 @@
-[
-  { "Find": "DriverVer=.*", "Replace": "DriverVer=1.0.0.0" }
-]
