@@ -3,14 +3,14 @@ function Get-PartnerCenterToken {
     param(
         $ClientId,
         $ClientSecret,
-        $TenantId,
-        $Scope = "https://api.partner.microsoft.com/.default"
+        $TenantId
     )
     $body = @{
         client_id = $ClientId
         scope = $Scope
         client_secret = $ClientSecret
         grant_type = "client_credentials"
+        resource = "https://manage.devcenter.microsoft.com"
     }
     $uri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
     $response = Invoke-RestMethod -Uri $uri -Method Post -Body $body
