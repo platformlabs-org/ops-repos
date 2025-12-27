@@ -56,7 +56,7 @@ $infRules = if (Test-Path $infRulesPath) { Get-Content $infRulesPath | ConvertFr
 if ($infRules -and $infRules.project -and $infRules.project."$projectName") {
     Write-Log "Project '$projectName' found in inf_patch_rules. Fetching Submission Name to determine pipeline."
     try {
-        $meta = Get-DriverMetadata -SubmissionId $submissionId -Token $pcToken
+        $meta = Get-DriverMetadata -ProductId $productId -SubmissionId $submissionId -Token $pcToken
         $submissionName = $meta.name
         Write-Log "Submission Name: $submissionName"
 
@@ -75,7 +75,7 @@ Write-Log "Selected Pipeline: $pipelineName"
 
 # 3. Download Driver & DuaShell
 $tempDir = Get-TempDirectory
-$downloads = Get-SubmissionPackage -SubmissionId $submissionId -Token $pcToken -DownloadPath $tempDir
+$downloads = Get-SubmissionPackage -ProductId $productId -SubmissionId $submissionId -Token $pcToken -DownloadPath $tempDir
 
 # Load Pipeline Config
 $pipelineConfigPath = Join-Path $ScriptRoot "..\pipelines\$pipelineName\pipeline.json"

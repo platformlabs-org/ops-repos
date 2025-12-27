@@ -7,7 +7,7 @@ Describe "PartnerCenter" {
              $tempDir = Join-Path $env:TEMP "pc_test"
              New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-             $result = Get-SubmissionPackage -SubmissionId "123" -Token "fake" -DownloadPath $tempDir
+             $result = Get-SubmissionPackage -ProductId "999" -SubmissionId "123" -Token "fake" -DownloadPath $tempDir
 
              $result.Driver | Should -Not -BeNullOrEmpty
              Test-Path $result.Driver | Should -Be $true
