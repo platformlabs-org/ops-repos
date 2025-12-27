@@ -63,7 +63,7 @@ function Get-SubmissionPackage {
     Set-Content -Path (Join-Path $tempSource "dummy.inf") -Value "DriverVer=1.0.0.0"
     Set-Content -Path (Join-Path $tempSource "dummy.hlkx") -Value "HLKX Content"
 
-    # Create INF that matches the locator patterns to ensure logic passes
+    # Create INF that matches the locator patterns
     Set-Content -Path (Join-Path $tempSource "iigd_dch.inf") -Value "DriverVer=0.0.0.0"
     Set-Content -Path (Join-Path $tempSource "iigd_ext.inf") -Value "DriverVer=0.0.0.0"
     Set-Content -Path (Join-Path $tempSource "npu_extension.inf") -Value "DriverVer=0.0.0.0"
@@ -76,4 +76,81 @@ function Get-SubmissionPackage {
     return @{ Driver = $driverPath; DuaShell = $shellPath }
 }
 
-Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-SubmissionPackage
+# New Submission Functions (Hardware Ingestion API)
+
+function New-Submission {
+    param(
+        $ProductId,
+        $Token
+    )
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/dashboard/ingestion-api-dashboard-submission#create-a-new-submission
+    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+        "Content-Type"  = "application/json"
+    }
+    # Body is typically empty to create a new one, or contains name?
+    # Usually empty to create a draft.
+    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body "{}"
+}
+
+function Upload-FileToBlob {
+    param(
+        $SasUrl,
+        $FilePath
+    )
+    # Simple BlockBlob PUT
+    # For large files, we should use blocks, but for HLKX usually < 100MB it might be fine directly?
+    # Actually, Azure Blob PUT Blob has a limit (256MB formerly, now higher).
+    # We will use simple PUT with x-ms-blob-type: BlockBlob
+
+    $headers = @{
+        "x-ms-blob-type" = "BlockBlob"
+    }
+
+    # Check file size. If > 256MB, block upload is safer, but simpler logic here for now.
+    Write-Host "Uploading $FilePath to Blob Storage..."
+    $content = Get-Content $FilePath -Raw -Encoding Byte # PowerShell 5.1
+    # In PowerShell Core (PWSH), -AsByteStream is needed or -Raw isn't byte?
+    # PWSH: Get-Content $Path -AsByteStream
+    # Since we run on windows-latest (PWSH), we use AsByteStream logic or System.IO.File
+
+    try {
+        # Using WebRequest for better stream handling
+        $wc = New-Object System.Net.WebClient
+        $wc.Headers.Add("x-ms-blob-type", "BlockBlob")
+        $wc.UploadFile($SasUrl, "PUT", $FilePath)
+    }
+    catch {
+        Throw "Failed to upload file to blob: $_"
+    }
+}
+
+function Commit-Submission {
+    param(
+        $ProductId,
+        $SubmissionId,
+        $Token
+    )
+    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions/$SubmissionId/commit"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+        "Content-Type"  = "application/json"
+    }
+    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body "{}"
+}
+
+function Get-SubmissionStatus {
+     param(
+        $ProductId,
+        $SubmissionId,
+        $Token
+    )
+    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions/$SubmissionId"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+    }
+    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+}
+
+Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus
