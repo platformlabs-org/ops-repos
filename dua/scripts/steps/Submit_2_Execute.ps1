@@ -7,10 +7,12 @@ param(
 $ErrorActionPreference = "Stop"
 $ScriptRoot  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ModulesPath = Join-Path $ScriptRoot "..\modules"
+$RepoRoot    = Resolve-Path (Join-Path $ScriptRoot "..\..") | Select-Object -ExpandProperty Path
 
 Import-Module (Join-Path $ModulesPath "Common.psm1")        -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")         -Force
 Import-Module (Join-Path $ModulesPath "PartnerCenter.psm1") -Force
+Import-Module (Join-Path $ModulesPath "DriverPipeline.psm1") -Force
 
 Write-Log "Step 2: Execute Submission"
 
@@ -67,13 +69,48 @@ try {
 
     if (-not $projectName) { $projectName = "DriverUpdate" } # Fallback
 
-    $newSubmissionName = "${originalSubmissionName}_${projectName}"
-    Write-Log "New Submission Name: $newSubmissionName"
+    # Determine Strategy
+    $mappingFile = Join-Path $RepoRoot "config\mapping\product_routing.json"
+    $infStrategy = try { Select-Pipeline -ProductName $originalSubmissionName -MappingFile $mappingFile } catch { $null }
 
-    # Create
-    $submission = New-Submission -ProductId $productId -Token $pcToken -Name $newSubmissionName -Type "derived"
+    Write-Log "Detected Strategy: $infStrategy (Based on '$originalSubmissionName')"
+
+    $isExtTask = $infStrategy -match "-ext$"
+
+    $submission = $null
+    $newSubmissionName = ""
+
+    if ($isExtTask) {
+        Write-Log "Extension task detected. Creating separate Product and Submission."
+
+        # 1. Get Original Product Name
+        $originalProduct = Get-Product -ProductId $productId -Token $pcToken
+        $originalProductName = $originalProduct.name
+
+        # 2. Construct New Name
+        $newBaseName = "${originalProductName} - ${projectName}"
+        $newSubmissionName = $newBaseName
+        Write-Log "New Product/Submission Name: $newBaseName"
+
+        # 3. Create New Product
+        $newProduct = New-Product -Name $newBaseName -Token $pcToken
+        $newProductId = $newProduct.id
+        Write-Log "Created New Product: $newProductId"
+
+        # 4. Create Initial Submission
+        $submission = New-Submission -ProductId $newProductId -Name $newSubmissionName -Token $pcToken -Type "initial"
+
+        # Switch context to new Product
+        $productId = $newProductId
+    } else {
+        # Standard Derived Submission
+        $newSubmissionName = "${originalSubmissionName}_${projectName}"
+        Write-Log "New Submission Name: $newSubmissionName"
+
+        $submission = New-Submission -ProductId $productId -Token $pcToken -Name $newSubmissionName -Type "derived"
+    }
+
     $newSubmissionId = $submission.id
-
     Write-Log "Submission Created: $newSubmissionId"
 
     # Check for upload URL (sasUrl)
