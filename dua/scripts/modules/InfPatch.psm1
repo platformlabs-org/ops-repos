@@ -136,9 +136,8 @@ function Patch-Inf-Advanced {
     if (-not $fullConfig.project.$ProjectName) { Throw "Project '$ProjectName' not found in config." }
     $projectConfig = $fullConfig.project.$ProjectName
 
-    $content = Get-Content $InfPath -Raw -Encoding UTF8 # Try UTF8 first
-    # Auto-detect encoding logic in PS is tricky, but often Get-Content handles BOM.
-    # If not, we assume standard driver encoding.
+    # Allow auto-detection (for UTF-16LE BOM) instead of forcing UTF8
+    $content = Get-Content $InfPath -Raw
 
     $infType = Identify-InfType -Content $content
     if (-not $infType) {

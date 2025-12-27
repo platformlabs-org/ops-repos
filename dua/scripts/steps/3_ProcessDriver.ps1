@@ -52,9 +52,16 @@ foreach ($inf in $infs) {
     }
 }
 
+# Normalize INFs to UTF-16LE (BOM) to ensure Gitea diffs work correctly with .gitattributes
+$workDirInfs = Get-ChildItem -Path $workDir -Recurse -Filter "*.inf"
+foreach ($wdInf in $workDirInfs) {
+    # Read with detection (default) and write back as UTF-16LE (Unicode)
+    $content = Get-Content -LiteralPath $wdInf.FullName -Raw
+    $content | Out-File -FilePath $wdInf.FullName -Encoding Unicode -Force
+}
+
 # (Optional) Create .gitattributes to ensure INFs are treated as text in PR
-# NOTE: Removed working-tree-encoding=UTF-16LE to avoid encoding normalization
-Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text"
+Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16LE"
 
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
