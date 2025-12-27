@@ -5,7 +5,7 @@ on:
 
 jobs:
   prepare:
-    runs-on: windows-latest
+    runs-on: [RUNNER-WHQL]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
