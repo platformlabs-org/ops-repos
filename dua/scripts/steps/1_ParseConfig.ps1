@@ -40,7 +40,7 @@ Write-Log "Parsed: Project=$projectName, ProductId=$productId, SubmissionId=$sub
 if (-not $projectName) { throw "Missing Project Name." }
 if (-not $productId -or -not $submissionId) { throw "Missing required fields." }
 
-# Determine Pipeline
+# Determine Strategy
 $pcToken = Get-PartnerCenterToken `
     -ClientId     $env:PARTNER_CENTER_CLIENT_ID `
     -ClientSecret $env:PARTNER_CENTER_CLIENT_SECRET `
@@ -50,25 +50,25 @@ $productRoutingPath = Join-Path $RepoRoot "config\mapping\product_routing.json"
 $infRulesPath       = Join-Path $RepoRoot "config\inf_patch_rules.json"
 
 $infRules = if (Test-Path -LiteralPath $infRulesPath) { Get-Content -Raw -LiteralPath $infRulesPath | ConvertFrom-Json } else { $null }
-$pipelineName = $null
+$infStrategy = $null
 
 if ($infRules -and $infRules.project -and $infRules.project."$projectName") {
     Write-Log "Project '$projectName' found in inf_patch_rules. Fetching Submission Name."
     $meta = Get-DriverMetadata -ProductId $productId -SubmissionId $submissionId -Token $pcToken
     $submissionName = $meta.name
     Write-Log "Submission Name: $submissionName"
-    $pipelineName = Select-Pipeline -ProductName $submissionName -MappingFile $productRoutingPath
+    $infStrategy = Select-Pipeline -ProductName $submissionName -MappingFile $productRoutingPath
 } else {
-    $pipelineName = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
+    $infStrategy = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
 }
 
-Write-Log "Selected Pipeline: $pipelineName"
-if ([string]::IsNullOrWhiteSpace($pipelineName)) { throw "Pipeline selection failed." }
+Write-Log "Selected Strategy: $infStrategy"
+if ([string]::IsNullOrWhiteSpace($infStrategy)) { throw "Strategy selection failed." }
 
 # Export to Env
 "PROJECT_NAME=$projectName" | Out-File -FilePath $env:GITHUB_ENV -Append
 "PRODUCT_ID=$productId" | Out-File -FilePath $env:GITHUB_ENV -Append
 "SUBMISSION_ID=$submissionId" | Out-File -FilePath $env:GITHUB_ENV -Append
-"PIPELINE_NAME=$pipelineName" | Out-File -FilePath $env:GITHUB_ENV -Append
+"INF_STRATEGY=$infStrategy" | Out-File -FilePath $env:GITHUB_ENV -Append
 
 Write-Log "Environment variables set."

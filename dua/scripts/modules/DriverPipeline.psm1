@@ -7,9 +7,9 @@ function Select-Pipeline {
     $mapping = Get-Content $MappingFile | ConvertFrom-Json
     foreach ($rule in $mapping.rules) {
         if ($ProductName -match $rule.pattern) {
-            return $rule.pipeline
+            return $rule.infStrategy
         }
     }
-    throw "No pipeline matched for product: $ProductName"
+    throw "No pipeline/strategy matched for product: $ProductName"
 }
 Export-ModuleMember -Function Select-Pipeline
