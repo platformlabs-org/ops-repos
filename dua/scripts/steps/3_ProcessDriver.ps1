@@ -40,7 +40,7 @@ Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 $infs = Get-ChildItem -Path $tempExtract -Recurse -Filter "*.inf"
 foreach ($inf in $infs) {
     # Canonicalize paths to avoid issues
-    $basePath = $tempExtract
+    $basePath = $tempExtract.FullName
     if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
         $basePath += [System.IO.Path]::DirectorySeparatorChar
     }
