@@ -29,13 +29,11 @@ if (-not $body) { $body = "" }
 
 $projectName  = ""
 $productId    = ""
-$submissionId = ""
 
 if ($body -match "(?ms)###\s*Project Name\s*\r?\n\s*(.+?)\s*(\r?\n|$)")  { $projectName  = $matches[1].Trim() }
 if ($body -match "(?ms)###\s*Product ID\s*\r?\n\s*(.+?)\s*(\r?\n|$)")    { $productId    = $matches[1].Trim() }
-if ($body -match "(?ms)###\s*Submission ID\s*\r?\n\s*(.+?)\s*(\r?\n|$)") { $submissionId = $matches[1].Trim() }
 
-Write-Log "Parsed Input: Project='$projectName', ProductId='$productId', SubmissionId='$submissionId'"
+Write-Log "Parsed Input: Project='$projectName', ProductId='$productId'"
 
 if (-not $productId) { throw "Missing required field: Product ID." }
 
