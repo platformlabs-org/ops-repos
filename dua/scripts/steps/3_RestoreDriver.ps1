@@ -40,7 +40,7 @@ if (-not (Test-Path $repoWorkDir)) { throw "Modified INFs not found in repo at $
 Write-Log "Overlaying modified INFs from $repoWorkDir"
 $modInfs = Get-ChildItem -Path $repoWorkDir -Recurse -File
 
-$basePath = $repoWorkDir.FullName
+$basePath = $repoWorkDir
 if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
     $basePath += [System.IO.Path]::DirectorySeparatorChar
 }
