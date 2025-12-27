@@ -3,7 +3,8 @@ function Get-PartnerCenterToken {
     param(
         $ClientId,
         $ClientSecret,
-        $TenantId
+        $TenantId,
+        $Scope = "https://manage.devcenter.microsoft.com/.default"
     )
     $body = @{
         client_id = $ClientId
