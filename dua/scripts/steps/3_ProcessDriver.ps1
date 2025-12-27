@@ -70,8 +70,9 @@ Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text worki
 
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
-$branchBase  = "dua/issue-$issueNumber/base"
-$branchPatch = "dua/issue-$issueNumber/patch"
+$uid = -join ((48..57) + (97..122) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+$branchBase  = "dua/issue-$issueNumber-$uid/base"
+$branchPatch = "dua/issue-$issueNumber-$uid/patch"
 
 # Git Config
 git config --global user.email "bot@example.com"

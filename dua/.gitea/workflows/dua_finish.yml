@@ -53,7 +53,7 @@ jobs:
       - name: Cleanup
         if: always()
         shell: pwsh
-        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER
+        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER -BaseBranch ${{ github.event.pull_request.base.ref }} -PatchBranch ${{ github.event.pull_request.head.ref }}
 
   cleanup_rejected:
     if: github.event.pull_request.merged == false && startsWith(github.event.pull_request.base.ref, 'dua/issue-')
@@ -78,4 +78,4 @@ jobs:
 
       - name: Cleanup
         shell: pwsh
-        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER
+        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER -BaseBranch ${{ github.event.pull_request.base.ref }} -PatchBranch ${{ github.event.pull_request.head.ref }}
