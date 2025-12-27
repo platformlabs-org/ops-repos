@@ -61,7 +61,7 @@ foreach ($wdInf in $workDirInfs) {
 }
 
 # (Optional) Create .gitattributes to ensure INFs are treated as text in PR
-Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16LE"
+Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16"
 
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
