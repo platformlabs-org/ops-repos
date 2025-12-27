@@ -31,6 +31,18 @@ function Get-DriverMetadata {
     return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
 }
 
+function Get-ProductSubmissions {
+    param(
+        [Parameter(Mandatory)] $ProductId,
+        [Parameter(Mandatory)] $Token
+    )
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+    }
+    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+}
+
 function Get-FileNameFromUrl {
     param(
         [Parameter(Mandatory)]
@@ -178,4 +190,4 @@ function Get-SubmissionStatus {
     return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
 }
 
-Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus
+Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-ProductSubmissions, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus
