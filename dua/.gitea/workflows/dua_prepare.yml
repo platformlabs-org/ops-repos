@@ -6,16 +6,37 @@ on:
 jobs:
   prepare:
     runs-on: [RUNNER-WHQL]
+    env:
+      GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
+      PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Run Prepare Script
+      - name: Parse Issue & Configuration
         shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
-          PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
-          PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
-          PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
         run: |
-          ./scripts/entrypoints/Prepare.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+          ./scripts/steps/1_ParseConfig.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+
+      - name: Download Assets
+        shell: pwsh
+        run: ./scripts/steps/2_DownloadAssets.ps1
+
+      - name: Process Driver
+        shell: pwsh
+        run: ./scripts/steps/3_ProcessDriver.ps1
+
+      - name: Update HLKX
+        shell: pwsh
+        run: ./scripts/steps/4_UpdateHlkx.ps1
+
+      - name: Package Results
+        shell: pwsh
+        run: ./scripts/steps/5_PackageResults.ps1
+
+      - name: Notify User
+        shell: pwsh
+        run: |
+          ./scripts/steps/6_Notify.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
