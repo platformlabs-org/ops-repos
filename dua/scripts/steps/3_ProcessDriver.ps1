@@ -51,7 +51,11 @@ foreach ($inf in $infs) {
         $destPath = Join-Path $workDir $relPath
         $destDir = Split-Path -Parent $destPath
         if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
-        Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
+
+        # RENAME TO .ini AND ENCODE AS UTF8 FOR PR VISIBILITY
+        $iniPath = $destPath -replace "\.inf$", ".ini"
+        $content = Get-Content -LiteralPath $inf.FullName -Raw
+        $content | Out-File -FilePath $iniPath -Encoding UTF8 -Force
     } else {
         Write-Warning "Path mismatch: '$fullPath' not under '$basePath'"
     }
@@ -84,15 +88,23 @@ $locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-
 $infPattern = $locatorConfig.locators.$infStrategy.filename_pattern
 if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$infStrategy'" }
 
-# Find INF in WorkDir
-$infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter $infPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+# Find INF (now .ini) in WorkDir
+# Adjust pattern to look for .ini if it looks for .inf
+$iniPattern = $infPattern -replace "\.inf", ".ini"
+if ($iniPattern -eq $infPattern) {
+    # If pattern didn't have extension, just use it, but might need to ensure we match .ini
+    # Assuming pattern usually matches filename like "igdlh.inf"
+    Write-Verbose "Pattern unchanged: $iniPattern"
+}
+
+$infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter $iniPattern -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $infFile) {
     # Try Regex match on Name
-    $infFile = Get-ChildItem -Path $workDir -Recurse -File | Where-Object { $_.Name -match $infPattern } | Select-Object -First 1
+    $infFile = Get-ChildItem -Path $workDir -Recurse -File | Where-Object { $_.Name -match $iniPattern } | Select-Object -First 1
 }
 
 if ($infFile) {
-    Write-Log "Patching INF: $($infFile.FullName)"
+    Write-Log "Patching INF (INI): $($infFile.FullName)"
     $infRulesPath = Join-Path $RepoRoot "config\inf_patch_rules.json"
     if (Test-Path -LiteralPath $infRulesPath) {
         Patch-Inf-Advanced -InfPath $infFile.FullName -ConfigPath $infRulesPath -ProjectName $projectName
@@ -100,7 +112,7 @@ if ($infFile) {
         Write-Warning "Rules not found. Skipping Patch-Inf-Advanced."
     }
 } else {
-    Write-Warning "Target INF matching '$infPattern' not found in extracted INFs. Skipping patch."
+    Write-Warning "Target INF matching '$iniPattern' not found in extracted INFs. Skipping patch."
 }
 
 # 5. Commit and Push Patch

@@ -50,15 +50,27 @@ foreach ($file in $modInfs) {
     $fullPath = $file.FullName
     if ($fullPath.StartsWith($basePath)) {
         $relPath = $fullPath.Substring($basePath.Length)
-        $destPath = Join-Path $restoreDir $relPath
 
-        if (Test-Path $destPath) {
-            Write-Log "Overwriting $relPath"
-            Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+        # Handle .ini -> .inf rename
+        if ($relPath.EndsWith(".ini")) {
+            $destRelPath = $relPath -replace "\.ini$", ".inf"
         } else {
-            Write-Warning "Modified file $relPath does not exist in original structure. Copying anyway."
-            $destParent = Split-Path -Parent $destPath
-            if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Force -Path $destParent | Out-Null }
+            $destRelPath = $relPath
+        }
+
+        $destPath = Join-Path $restoreDir $destRelPath
+
+        # Prepare destination directory
+        $destParent = Split-Path -Parent $destPath
+        if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Force -Path $destParent | Out-Null }
+
+        Write-Log "Restoring $relPath -> $destRelPath"
+
+        # We need to copy AND convert back to Unicode (UTF-16 LE) because we saved as UTF-8 for Git
+        if ($file.Extension -eq ".ini") {
+            $content = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8
+            $content | Out-File -FilePath $destPath -Encoding Unicode -Force
+        } else {
             Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
         }
     } else {
