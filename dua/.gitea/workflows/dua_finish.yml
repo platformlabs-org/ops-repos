@@ -53,26 +53,29 @@ jobs:
       - name: Cleanup
         if: always()
         shell: pwsh
-        run: |
-          $issueNumber = $env:ISSUE_NUMBER
-          if (-not $issueNumber) { exit 0 }
+        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER
 
-          # 1. Cleanup Cache
-          $cacheDir = "\\nas\labs\RUNNER\tmp\issue-$issueNumber"
-          if (Test-Path $cacheDir) {
-              Write-Host "Cleaning up cache: $cacheDir"
-              Remove-Item -LiteralPath $cacheDir -Recurse -Force -ErrorAction SilentlyContinue
+  cleanup_rejected:
+    if: github.event.pull_request.merged == false && startsWith(github.event.pull_request.base.ref, 'dua/issue-')
+    runs-on: [RUNNER-WHQL]
+    env:
+      GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Extract Issue Number
+        shell: pwsh
+        run: |
+          # Extract from branch name: dua/issue-123/base
+          if ($env:GITHUB_BASE_REF -match "issue-(\d+)") {
+              "ISSUE_NUMBER=$($matches[1])" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              throw "Could not extract issue number from base ref: $env:GITHUB_BASE_REF"
           }
 
-          # 2. Cleanup Branches
-          # Needs git authentication
-          git config --global user.email "bot@example.com"
-          git config --global user.name "DUA Bot"
-
-          $baseBranch = "dua/issue-$issueNumber/base"
-          $patchBranch = "dua/issue-$issueNumber/patch"
-
-          Write-Host "Deleting branches: $baseBranch, $patchBranch"
-          # Push delete to origin
-          git push origin --delete $baseBranch --force
-          git push origin --delete $patchBranch --force
+      - name: Cleanup
+        shell: pwsh
+        run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER
