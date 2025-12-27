@@ -237,6 +237,46 @@ function Post-CommentWithAttachments {
     }
 }
 
+function New-PullRequest {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [string]$Head,
+        [string]$Base,
+        [string]$Title,
+        [string]$Body,
+        [string[]]$Assignees,
+        [string]$Token
+    )
+
+    $api = Get-GiteaApiBase
+    # POST /repos/{owner}/{repo}/pulls
+    $uri = "$api/repos/$Owner/$Repo/pulls"
+    Write-Host "[Gitea] POST $uri"
+
+    $headers = New-GiteaHeaders -Token $Token
+    $headers["Content-Type"] = "application/json"
+
+    $payloadObj = @{
+        head  = $Head
+        base  = $Base
+        title = $Title
+        body  = $Body
+    }
+    if ($Assignees -and $Assignees.Count -gt 0) {
+        $payloadObj["assignees"] = $Assignees
+    }
+
+    $payload = $payloadObj | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $payload
+    } catch {
+        throw "New-PullRequest failed. URI=$uri :: $($_.Exception.Message)"
+    }
+}
+
 Export-ModuleMember -Function `
     Get-Issue, Post-Comment, Get-Comments, `
-    Upload-IssueAttachment, Upload-CommentAttachment, Post-CommentWithAttachments
+    Upload-IssueAttachment, Upload-CommentAttachment, Post-CommentWithAttachments, `
+    New-PullRequest
