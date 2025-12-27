@@ -1,11 +1,11 @@
-name: WHQL Submit
+name: DUA Submit
 on:
   issue_comment:
     types: [created]
 
 jobs:
   submit:
-    if: contains(github.event.issue.labels.*.name, 'DUA') && startsWith(github.event.comment.body, '/submit')
+    if: startsWith(github.event.comment.body, '/submit')
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -14,7 +14,7 @@ jobs:
       - name: Run Submit Script
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
           PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
           PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
           PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
