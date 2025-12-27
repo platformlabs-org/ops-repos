@@ -31,8 +31,45 @@ function Get-DriverMetadata {
     return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
 }
 
+function Get-FileNameFromUrl {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url
+    )
+
+    # 解析 URL query
+    $uri = [System.Uri]$Url
+    $query = [System.Web.HttpUtility]::ParseQueryString($uri.Query)
+
+    # rscd 里一般是: attachment; filename=XXX
+    $rscd = $query["rscd"]
+    if ([string]::IsNullOrWhiteSpace($rscd)) {
+        return $null
+    }
+
+    # 解码 rscd
+    $rscdDecoded = [System.Uri]::UnescapeDataString($rscd)
+
+    # 1) filename*=UTF-8''xxx（更标准）
+    if ($rscdDecoded -match 'filename\*\s*=\s*([^;]+)') {
+        $v = $matches[1].Trim()
+        # 常见格式：UTF-8''<urlencoded>
+        if ($v -match "UTF-8''(.+)$") {
+            return [System.Uri]::UnescapeDataString($matches[1])
+        }
+        return $v.Trim('"')
+    }
+
+    # 2) filename=xxx
+    if ($rscdDecoded -match 'filename\s*=\s*([^;]+)') {
+        return $matches[1].Trim().Trim('"')
+    }
+
+    return $null
+}
+
 function Get-SubmissionPackage {
-     param(
+    param(
         $ProductId,
         $SubmissionId,
         $Token,
@@ -41,23 +78,28 @@ function Get-SubmissionPackage {
 
     $meta = Get-DriverMetadata -ProductId $ProductId -SubmissionId $SubmissionId -Token $Token
 
-    $driverAsset = $meta.downloads.items | Where-Object { $_.type -eq 'initialPackage' }
-    $shellAsset = $meta.downloads.items | Where-Object { $_.type -eq 'derivedPackage' }
+    $driverAsset = $meta.downloads.items | Where-Object { $_.type -eq 'signedPackage' }
+    $shellAsset  = $meta.downloads.items | Where-Object { $_.type -eq 'derivedPackage' }
 
-    if (-not $driverAsset) { throw "Driver asset (initialPackage) not found for Submission $SubmissionId" }
-    if (-not $shellAsset) { throw "DuaShell asset (derivedPackage) not found for Submission $SubmissionId" }
+    if (-not $driverAsset) { throw "Driver asset (signedPackage) not found for Submission $SubmissionId" }
+    if (-not $shellAsset)  { throw "DuaShell asset (derivedPackage) not found for Submission $SubmissionId" }
 
-    $driverPath = Join-Path $DownloadPath "driver.zip"
-    $shellPath = Join-Path $DownloadPath "duashell.zip"
+    # 从 URL 提取文件名；提取不到就用默认名兜底
+    $driverName = if ($null -ne ($tmp = Get-FileNameFromUrl -Url $driverAsset.url) -and $tmp.Trim() -ne "") { $tmp } else { "driver.zip" }
+    $shellName  = if ($null -ne ($tmp = Get-FileNameFromUrl -Url $shellAsset.url)  -and $tmp.Trim() -ne "") { $tmp } else { "duashell.hlkx" }
 
-    Write-Host "Downloading Driver from $($driverAsset.url) ..."
-    Invoke-WebRequest -Uri $driverAsset.url -OutFile $driverPath -ProgressAction SilentlyContinue
+    $driverPath = Join-Path $DownloadPath $driverName
+    $shellPath  = Join-Path $DownloadPath $shellName
 
-    Write-Host "Downloading DuaShell from $($shellAsset.url) ..."
-    Invoke-WebRequest -Uri $shellAsset.url -OutFile $shellPath -ProgressAction SilentlyContinue
+    Write-Host "Downloading Driver => $driverPath"
+    Invoke-WebRequest -Uri $driverAsset.url -OutFile $driverPath
+
+    Write-Host "Downloading DuaShell => $shellPath"
+    Invoke-WebRequest -Uri $shellAsset.url -OutFile $shellPath
 
     return @{ Driver = $driverPath; DuaShell = $shellPath }
 }
+
 
 # New Submission Functions (Hardware Ingestion API)
 
