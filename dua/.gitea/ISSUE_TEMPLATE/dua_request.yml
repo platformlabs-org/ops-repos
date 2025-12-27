@@ -1,7 +1,6 @@
-name: WHQL Request
+name: DUA Request
 description: Request for DUA driver processing and submission
-title: "[WHQL] "
-labels: ["DUA"]
+title: "[DUA] "
 body:
   - type: input
     id: project_name
