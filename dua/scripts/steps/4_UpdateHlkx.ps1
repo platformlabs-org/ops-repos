@@ -23,6 +23,17 @@ if ($pipelineConfig.actions -contains "ReplaceDriverInShell") {
     if (-not $workspace) { $workspace = Get-Location }
 
     $outputHlkx = Join-Path $workspace "modified.hlkx"
+
+    # Find the actual directory containing the INF file
+    $infFile = Get-ChildItem -Path $driverRootPath -Filter "*.inf" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($infFile) {
+        Write-Log "Found INF file at: $($infFile.FullName)"
+        Write-Log "Updating Driver Path from '$driverRootPath' to '$($infFile.Directory.FullName)'"
+        $driverRootPath = $infFile.Directory.FullName
+    } else {
+        Write-Warning "No INF file found in '$driverRootPath'. Using root path."
+    }
+
     Update-DuaShell -ShellPath $hlkxPath -NewDriverPath $driverRootPath -OutputPath $outputHlkx
 
     "OUTPUT_HLKX_PATH=$outputHlkx" | Out-File -FilePath $env:GITHUB_ENV -Append
