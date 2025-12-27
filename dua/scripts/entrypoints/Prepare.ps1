@@ -101,29 +101,11 @@ foreach ($action in $pipelineConfig.actions) {
             if (-not $infFile) { Throw "INF file matching $infPattern not found." }
             $driverInfPath = $infFile.FullName
 
-            # Use Advanced Patching if config.json exists, else simple
-            # In this optimized version, we use the advanced logic ported from python
-            # Config is at dua/config/config.json (legacy path from earlier check) or similar?
-            # User structure showed dua/Scripts/config.json. I should move it to dua/config/advanced_patch_config.json
-
-            $legacyConfigPath = Join-Path $RepoRoot "Scripts\config.json" # Original location
-            # Or better, we should have standardized it in the 'optimize' step.
-            # Let's assume we will move it to dua/config/inf_patch_rules.json
-            $advConfigPath = Join-Path $RepoRoot "config\inf_patch_rules.json"
-
-            if (Test-Path $advConfigPath) {
-                 Patch-Inf-Advanced -InfPath $infFile.FullName -ConfigPath $advConfigPath -ProjectName $projectName
+            # Use Advanced Patching
+            if (Test-Path $infRulesPath) {
+                 Patch-Inf-Advanced -InfPath $infFile.FullName -ConfigPath $infRulesPath -ProjectName $projectName
             } else {
-                 # Fallback to simple rules if no advanced config found
-                 $rulesPath = Join-Path $ScriptRoot "..\pipelines\$pipelineName\inf_rules.json"
-                 if (Test-Path $rulesPath) {
-                    $rules = Get-Content $rulesPath | ConvertFrom-Json
-                    # This function was removed from InfPatch.psm1 by overwrite.
-                    # I need to restore the simple Patch-Inf if I want fallback,
-                    # OR just ensure advanced config is present.
-                    # Given the Python script was the "core", I should rely on Advanced.
-                    Write-Warning "Advanced config not found at $advConfigPath. Skipping patch."
-                 }
+                 Write-Warning "Advanced config not found at $infRulesPath. Skipping patch."
             }
         }
         "ReplaceDriverInShell" {
