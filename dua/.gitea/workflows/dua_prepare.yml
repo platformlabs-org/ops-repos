@@ -18,4 +18,4 @@ jobs:
           PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
           PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
         run: |
-          ./dua/scripts/entrypoints/Prepare.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+          ./scripts/entrypoints/Prepare.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
