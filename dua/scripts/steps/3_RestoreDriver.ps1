@@ -39,19 +39,30 @@ if (-not (Test-Path $repoWorkDir)) { throw "Modified INFs not found in repo at $
 
 Write-Log "Overlaying modified INFs from $repoWorkDir"
 $modInfs = Get-ChildItem -Path $repoWorkDir -Recurse -File
+
+$basePath = $repoWorkDir.FullName
+if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+    $basePath += [System.IO.Path]::DirectorySeparatorChar
+}
+
 foreach ($file in $modInfs) {
     # Calculate relative path
-    $relPath = $file.FullName.Substring($repoWorkDir.FullName.Length + 1)
-    $destPath = Join-Path $restoreDir $relPath
+    $fullPath = $file.FullName
+    if ($fullPath.StartsWith($basePath)) {
+        $relPath = $fullPath.Substring($basePath.Length)
+        $destPath = Join-Path $restoreDir $relPath
 
-    if (Test-Path $destPath) {
-        Write-Log "Overwriting $relPath"
-        Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+        if (Test-Path $destPath) {
+            Write-Log "Overwriting $relPath"
+            Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+        } else {
+            Write-Warning "Modified file $relPath does not exist in original structure. Copying anyway."
+            $destParent = Split-Path -Parent $destPath
+            if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Force -Path $destParent | Out-Null }
+            Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+        }
     } else {
-        Write-Warning "Modified file $relPath does not exist in original structure. Copying anyway."
-        $destParent = Split-Path -Parent $destPath
-        if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Force -Path $destParent | Out-Null }
-        Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+        Write-Warning "Path mismatch: '$fullPath' not under '$basePath'"
     }
 }
 

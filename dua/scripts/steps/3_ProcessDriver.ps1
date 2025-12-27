@@ -39,13 +39,22 @@ Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 # Move INFs to workDir
 $infs = Get-ChildItem -Path $tempExtract -Recurse -Filter "*.inf"
 foreach ($inf in $infs) {
-    # Keep directory structure? Request didn't specify but it's safer.
-    # Relative path
-    $relPath = $inf.FullName.Substring($tempExtract.FullName.Length + 1)
-    $destPath = Join-Path $workDir $relPath
-    $destDir = Split-Path -Parent $destPath
-    if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
-    Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
+    # Canonicalize paths to avoid issues
+    $basePath = $tempExtract.FullName
+    if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $basePath += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $fullPath = $inf.FullName
+    if ($fullPath.StartsWith($basePath)) {
+        $relPath = $fullPath.Substring($basePath.Length)
+        $destPath = Join-Path $workDir $relPath
+        $destDir = Split-Path -Parent $destPath
+        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
+        Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
+    } else {
+        Write-Warning "Path mismatch: '$fullPath' not under '$basePath'"
+    }
 }
 
 # 3. Git Operations
