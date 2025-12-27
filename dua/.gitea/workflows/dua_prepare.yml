@@ -27,16 +27,3 @@ jobs:
       - name: Process Driver
         shell: pwsh
         run: ./scripts/steps/3_ProcessDriver.ps1
-
-      - name: Update HLKX
-        shell: pwsh
-        run: ./scripts/steps/4_UpdateHlkx.ps1
-
-      - name: Package Results
-        shell: pwsh
-        run: ./scripts/steps/5_PackageResults.ps1
-
-      - name: Notify User
-        shell: pwsh
-        run: |
-          ./scripts/steps/6_Notify.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
