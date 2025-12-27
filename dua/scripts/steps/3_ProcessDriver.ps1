@@ -7,6 +7,7 @@ $RepoRoot    = Resolve-Path (Join-Path $ScriptRoot "..\..") | Select-Object -Exp
 
 Import-Module (Join-Path $ModulesPath "Common.psm1")   -Force
 Import-Module (Join-Path $ModulesPath "InfPatch.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Gitea.psm1")    -Force
 
 Write-Log "Step 3: Process Driver (Git Workflow)"
 
@@ -34,7 +35,7 @@ if (Test-Path $workDir) { Remove-Item $workDir -Recurse -Force }
 New-Item -ItemType Directory -Path $workDir | Out-Null
 
 $serverUrl = $env:GITHUB_SERVER_URL
-if (-not $serverUrl) { $serverUrl = "https://gitea.example.com" } # Fallback, should be set by runner
+if (-not $serverUrl) { $serverUrl = "https://gitea.example.com" }
 $cloneUrl = "$serverUrl/$repoOwner/$repoName.git".Replace("://", "://$($repoOwner):$($token)@")
 
 Write-Log "Cloning repo to work_git..."
@@ -57,7 +58,6 @@ if (Test-Path $tempExtract) { Remove-Item $tempExtract -Recurse -Force }
 Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 
 # Copy ONLY INFs to work_git
-# We preserve directory structure relative to tempExtract
 $infFiles = Get-ChildItem -Path $tempExtract -Recurse -Filter "*.inf"
 foreach ($inf in $infFiles) {
     $relPath = [System.IO.Path]::GetRelativePath($tempExtract, $inf.FullName)
@@ -67,7 +67,7 @@ foreach ($inf in $infFiles) {
     Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
 }
 
-# Delete unwanted (e.g. iigd_ext_d.inf) before commit
+# Delete unwanted
 $badInfs = Get-ChildItem -Path $workDir -Recurse -File -Filter "iigd_ext_d.inf" -ErrorAction SilentlyContinue
 if ($badInfs) {
     foreach ($f in $badInfs) { Remove-Item -LiteralPath $f.FullName -Force }
@@ -90,7 +90,6 @@ if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$i
 
 $infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter $infPattern -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $infFile) {
-    # Try regex match on name
     $infFile = Get-ChildItem -Path $workDir -Recurse -File | Where-Object { $_.Name -match $infPattern } | Select-Object -First 1
 }
 if (-not $infFile) { throw "INF file matching '$infPattern' not found in work_git." }
@@ -121,14 +120,26 @@ $body = @{
 }
 
 $jsonBody = $body | ConvertTo-Json -Depth 10
+$prUrl = ""
 
 try {
     $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $jsonBody -ContentType "application/json" -Headers @{ "Authorization" = "token $token" }
-    Write-Log "PR Created: $($response.html_url)"
+    $prUrl = $response.html_url
+    Write-Log "PR Created: $prUrl"
 } catch {
     Write-Warning "Failed to create PR: $_"
-    # It might already exist, try to update? Or just ignore if it's a re-run.
-    # We won't block, but user needs to check.
+    # Try to find existing PR? For now, we assume user can find it if it failed because it exists.
+}
+
+# 4. Notify User on Issue
+if ($prUrl) {
+    $commentBody = "### DUA Preparation Complete`n`nA Pull Request has been created with the proposed INF modifications.`n`n👉 **[Review and Merge PR]($prUrl)**`n`nOnce merged, the submission process will continue automatically."
+    try {
+        Post-Comment -Owner $repoOwner -Repo $repoName -IssueNumber $issueNumber -Body $commentBody -Token $token
+        Write-Log "Posted notification to Issue #$issueNumber"
+    } catch {
+        Write-Warning "Failed to post comment to issue: $_"
+    }
 }
 
 Write-Log "Step 3 Complete. Waiting for PR Merge."
