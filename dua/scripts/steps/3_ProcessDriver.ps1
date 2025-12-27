@@ -28,10 +28,6 @@ New-Item -ItemType Directory -Force -Path $workDir | Out-Null
 
 # 2. Extract ONLY INFs from Driver Zip to Work Dir
 Write-Log "Extracting INFs from $driverZip to $workDir"
-# We extract all first to temp, then move INFs to workDir to ensure structure?
-# Or just extract flat? The request says "只提交涉及修改的inf文件" (Only submit involved modified INFs).
-# To maintain structure, we should preserve relative paths if possible, or just flat if the driver is flat.
-# Let's extract to temp first.
 $tempExtract = Join-Path $env:GITHUB_WORKSPACE "temp_extract_all"
 New-Item -ItemType Directory -Force -Path $tempExtract | Out-Null
 Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
@@ -39,7 +35,6 @@ Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 # Move INFs to workDir
 $infs = Get-ChildItem -Path $tempExtract -Recurse -Filter "*.inf"
 foreach ($inf in $infs) {
-    # Canonicalize paths to avoid issues
     $basePath = $tempExtract
     if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
         $basePath += [System.IO.Path]::DirectorySeparatorChar
@@ -47,9 +42,9 @@ foreach ($inf in $infs) {
 
     $fullPath = $inf.FullName
     if ($fullPath.StartsWith($basePath)) {
-        $relPath = $fullPath.Substring($basePath.Length)
+        $relPath  = $fullPath.Substring($basePath.Length)
         $destPath = Join-Path $workDir $relPath
-        $destDir = Split-Path -Parent $destPath
+        $destDir  = Split-Path -Parent $destPath
         if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
         Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
     } else {
@@ -57,25 +52,18 @@ foreach ($inf in $infs) {
     }
 }
 
-# Normalize INFs to UTF-16LE for consistent Git handling
-Write-Log "Normalizing INFs to UTF-16LE..."
-$workDirInfs = Get-ChildItem -Path $workDir -Recurse -Filter "*.inf"
-foreach ($inf in $workDirInfs) {
-    $content = Get-Content -LiteralPath $inf.FullName -Raw
-    $content | Out-File -LiteralPath $inf.FullName -Encoding Unicode -Force
-}
-
-# Create .gitattributes to ensure INFs are treated as text in PR
-Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16LE"
+# (Optional) Create .gitattributes to ensure INFs are treated as text in PR
+# NOTE: Removed working-tree-encoding=UTF-16LE to avoid encoding normalization
+Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text"
 
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
-$uid = -join ((48..57) + (97..122) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
-$branchBase  = "dua/issue-$issueNumber-$uid/base"
-$branchPatch = "dua/issue-$issueNumber-$uid/patch"
+# $uid = -join ((48..57) + (97..122) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+$branchBase  = "dua/issue-$issueNumber/base"
+$branchPatch = "dua/issue-$issueNumber/patch"
 
 # Git Config
-git config --global user.email "bot@example.com"
+git config --global user.email "bot@lnvpe.com"
 git config --global user.name "DUA Bot"
 
 # Create/Switch to Base Branch
@@ -90,16 +78,13 @@ Write-Log "Creating Patch Branch: $branchPatch"
 git checkout -b $branchPatch
 
 # 4. Patch INFs
-# Locate Target INF based on Strategy
 $locatorConfigPath = Join-Path $RepoRoot "config\mapping\inf_locator.json"
 $locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-Json
 $infPattern = $locatorConfig.locators.$infStrategy.filename_pattern
 if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$infStrategy'" }
 
-# Find INF in WorkDir
 $infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter $infPattern -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $infFile) {
-    # Try Regex match on Name
     $infFile = Get-ChildItem -Path $workDir -Recurse -File | Where-Object { $_.Name -match $infPattern } | Select-Object -First 1
 }
 
@@ -124,13 +109,12 @@ git push origin $branchPatch --force
 # 6. Create Pull Request
 Write-Log "Creating Pull Request..."
 
-# Get Issue Creator to assign
 $issue = Get-Issue -Owner $repoOwner -Repo $repoName -IssueNumber $issueNumber -Token $token
 $creator = $issue.user.login
 Write-Log "Assigning PR to issue creator: $creator"
 
 $prTitle = "DUA Patch Review for Issue #$issueNumber"
-$prBody  = "Automated DUA Patch.\n\nOriginal Issue: #$issueNumber\n\nPlease review the INF changes. Merging this PR will trigger the final packaging."
+$prBody  = "Automated DUA Patch.`n`nOriginal Issue: #$issueNumber`n`nPlease review the INF changes. Merging this PR will trigger the final packaging."
 
 $pr = New-PullRequest `
     -Owner $repoOwner `
