@@ -18,14 +18,22 @@ if (-not $token) { $token = $env:GITEA_TOKEN }
 if (-not $token) { $token = $env:BOTTOKEN }
 if (-not $token) { throw "Missing API token." }
 
-# 1. Get Product ID from Issue Body
+# 1. Get Product ID and Project Name from Issue Body
 $issue = Get-Issue -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Token $token
 $body = $issue.body
-$productId = ""
-if ($body -match "### Product ID\s*\r?\n\s*(.+?)\s*(\r?\n|$)") { $productId = $matches[1].Trim() }
+
+$productId   = ""
+$projectName = ""
+$submissionId = ""
+
+if ($body -match "(?ms)###\s*Product ID\s*\r?\n\s*(.+?)\s*(\r?\n|$)")  { $productId    = $matches[1].Trim() }
+if ($body -match "(?ms)###\s*Project Name\s*\r?\n\s*(.+?)\s*(\r?\n|$)")  { $projectName  = $matches[1].Trim() }
+if ($body -match "(?ms)###\s*Submission ID\s*\r?\n\s*(.+?)\s*(\r?\n|$)") { $submissionId = $matches[1].Trim() }
 
 if (-not $productId) { throw "Product ID not found in issue." }
 Write-Log "Product ID: $productId"
+if ($projectName) { Write-Log "Project Name: $projectName" }
+if ($submissionId) { Write-Log "Submission ID: $submissionId" }
 
 # 2. Find latest HLKX in comments
 $comments = Get-Comments -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Token $token
@@ -49,3 +57,5 @@ Write-Log "Found HLKX URL: $hlkxUrl"
 
 "PRODUCT_ID=$productId" | Out-File -FilePath $env:GITHUB_ENV -Append
 "HLKX_URL=$hlkxUrl" | Out-File -FilePath $env:GITHUB_ENV -Append
+if ($projectName)  { "PROJECT_NAME=$projectName" | Out-File -FilePath $env:GITHUB_ENV -Append }
+if ($submissionId) { "SUBMISSION_ID=$submissionId" | Out-File -FilePath $env:GITHUB_ENV -Append }

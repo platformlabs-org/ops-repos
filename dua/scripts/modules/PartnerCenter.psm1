@@ -113,22 +113,32 @@ function Get-SubmissionPackage {
 }
 
 
-# New Submission Functions (Hardware Ingestion API)
+# New Submission Functions (Hardware API)
 
 function New-Submission {
     param(
         $ProductId,
-        $Token
+        $Token,
+        $Name,
+        $Type = "derived"
     )
-    # https://learn.microsoft.com/en-us/windows-hardware/drivers/dashboard/ingestion-api-dashboard-submission#create-a-new-submission
-    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions"
+    # POST https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/{productID}/submissions
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions"
     $headers = @{
         "Authorization" = "Bearer $Token"
         "Content-Type"  = "application/json"
     }
-    # Body is typically empty to create a new one, or contains name?
-    # Usually empty to create a draft.
-    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body "{}"
+
+    $bodyObj = @{
+        type = $Type
+    }
+    if ($Name) {
+        $bodyObj["name"] = $Name
+    }
+
+    $body = $bodyObj | ConvertTo-Json
+
+    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
 }
 
 function Upload-FileToBlob {
@@ -137,21 +147,11 @@ function Upload-FileToBlob {
         $FilePath
     )
     # Simple BlockBlob PUT
-    # For large files, we should use blocks, but for HLKX usually < 100MB it might be fine directly?
-    # Actually, Azure Blob PUT Blob has a limit (256MB formerly, now higher).
-    # We will use simple PUT with x-ms-blob-type: BlockBlob
-
     $headers = @{
         "x-ms-blob-type" = "BlockBlob"
     }
 
-    # Check file size. If > 256MB, block upload is safer, but simpler logic here for now.
     Write-Host "Uploading $FilePath to Blob Storage..."
-    $content = Get-Content $FilePath -Raw -Encoding Byte # PowerShell 5.1
-    # In PowerShell Core (PWSH), -AsByteStream is needed or -Raw isn't byte?
-    # PWSH: Get-Content $Path -AsByteStream
-    # Since we run on windows-latest (PWSH), we use AsByteStream logic or System.IO.File
-
     try {
         # Using WebRequest for better stream handling
         $wc = New-Object System.Net.WebClient
@@ -169,7 +169,8 @@ function Commit-Submission {
         $SubmissionId,
         $Token
     )
-    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions/$SubmissionId/commit"
+    # POST https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/{productID}/submissions/{submissionID}/commit
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions/$SubmissionId/commit"
     $headers = @{
         "Authorization" = "Bearer $Token"
         "Content-Type"  = "application/json"
