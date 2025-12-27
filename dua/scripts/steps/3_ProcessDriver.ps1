@@ -11,13 +11,13 @@ Import-Module (Join-Path $ModulesPath "InfPatch.psm1") -Force
 Write-Log "Step 3: Process Driver"
 
 $driverZip    = $env:DRIVER_ZIP_PATH
-$pipelineName = $env:PIPELINE_NAME
+$infStrategy  = $env:INF_STRATEGY
 $projectName  = $env:PROJECT_NAME
 
-if (-not $driverZip -or -not $pipelineName) { throw "Missing input env vars." }
+if (-not $driverZip -or -not $infStrategy) { throw "Missing input env vars." }
 
-# Pipeline Config
-$pipelineConfigPath = Join-Path $RepoRoot "scripts\pipelines\$pipelineName\pipeline.json"
+# Pipeline Config (Global/Default)
+$pipelineConfigPath = Join-Path $RepoRoot "config\pipeline.json"
 if (-not (Test-Path $pipelineConfigPath)) { throw "Pipeline config not found: $pipelineConfigPath" }
 $pipelineConfig = Get-Content -Raw -LiteralPath $pipelineConfigPath | ConvertFrom-Json
 
@@ -44,9 +44,6 @@ if ($pipelineConfig.actions -contains "PatchInf") {
     $locatorConfigPath = Join-Path $RepoRoot "config\mapping\inf_locator.json"
     $locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-Json
 
-    $infStrategy = $pipelineConfig.infStrategy
-    if (-not $infStrategy) { throw "pipeline.json missing infStrategy" }
-
     $infPattern = $locatorConfig.locators.$infStrategy.filename_pattern
     if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$infStrategy'" }
 
@@ -71,11 +68,6 @@ if ($pipelineConfig.actions -contains "PatchInf") {
         Write-Warning "Advanced config not found at $infRulesPath. Skipping patch."
     }
 } else {
-    # If no patch, assume root is where we unzipped or found via some other mean?
-    # For now, assume PatchInf is always required to find the root, or we use root of extract.
-    # But usually DUA requires finding the INF dir.
-    # If PatchInf is NOT in actions, we might need a FindInf action.
-    # For now, default to extract root if not found, but this might be risky.
     $driverRootPath = $extractDir
     Write-Warning "No PatchInf action. Using extract root as DriverRoot: $driverRootPath"
 }

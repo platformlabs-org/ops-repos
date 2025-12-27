@@ -1,0 +1,7 @@
+{
+  "actions": [
+    "PatchInf",
+    "ReplaceDriverInShell",
+    "PackageArtifacts"
+  ]
+}

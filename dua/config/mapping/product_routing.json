@@ -2,15 +2,15 @@
   "rules": [
     {
       "pattern": ".*Graphic.*Base.*",
-      "pipeline": "graphic-base"
+      "infStrategy": "graphic-base"
     },
     {
       "pattern": ".*Graphic.*Ext.*",
-      "pipeline": "graphic-ext"
+      "infStrategy": "graphic-ext"
     },
     {
       "pattern": ".*NPU.*",
-      "pipeline": "npu-ext"
+      "infStrategy": "npu-ext"
     }
   ]
 }
