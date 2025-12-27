@@ -30,12 +30,18 @@ New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
 Write-Log "Extracting $driverZip to $extractDir"
 Expand-Archive-Force -Path $driverZip -DestinationPath $extractDir
 
-# Delete unwanted
-$badInfs = Get-ChildItem -Path $extractDir -Recurse -File -Filter "iigd_ext_d.inf" -ErrorAction SilentlyContinue
-if ($badInfs) {
-    foreach ($f in $badInfs) {
-        Write-Log "Deleting unwanted INF: $($f.FullName)"
-        Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+# ✅ Requirement: delete iigd_ext_d.inf and extinf_d.cat if exists (anywhere under extracted dir)
+$unwantedFiles = @("iigd_ext_d.inf", "extinf_d.cat")
+
+foreach ($name in $unwantedFiles) {
+    $hits = Get-ChildItem -Path $extractDir -Recurse -File -Filter $name -ErrorAction SilentlyContinue
+    if ($hits) {
+        foreach ($f in $hits) {
+            Write-Log "Deleting unwanted file: $($f.FullName)"
+            Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+        }
+    } else {
+        Write-Log "No $name found. Skip delete."
     }
 }
 
