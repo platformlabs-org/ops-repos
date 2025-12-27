@@ -50,8 +50,11 @@ function Get-SubmissionPackage {
     $driverPath = Join-Path $DownloadPath "driver.zip"
     $shellPath = Join-Path $DownloadPath "duashell.zip"
 
-    Invoke-WebRequest -Uri $driverAsset.url -OutFile $driverPath
-    Invoke-WebRequest -Uri $shellAsset.url -OutFile $shellPath
+    Write-Host "Downloading Driver from $($driverAsset.url) ..."
+    Invoke-WebRequest -Uri $driverAsset.url -OutFile $driverPath -ProgressAction SilentlyContinue
+
+    Write-Host "Downloading DuaShell from $($shellAsset.url) ..."
+    Invoke-WebRequest -Uri $shellAsset.url -OutFile $shellPath -ProgressAction SilentlyContinue
 
     return @{ Driver = $driverPath; DuaShell = $shellPath }
 }
