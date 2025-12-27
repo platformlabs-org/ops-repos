@@ -1,0 +1,13 @@
+{
+  "locators": {
+    "graphic-base": {
+      "filename_pattern": "iigd_dch.inf"
+    },
+    "graphic-ext": {
+      "filename_pattern": "iigd_ext.inf"
+    },
+    "npu-ext": {
+      "filename_pattern": "npu_extension.inf"
+    }
+  }
+}

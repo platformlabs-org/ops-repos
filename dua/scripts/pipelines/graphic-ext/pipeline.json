@@ -1,0 +1,10 @@
+{
+  "pipelineName": "graphic-ext",
+  "description": "Process extension graphics driver",
+  "infStrategy": "graphic-ext",
+  "actions": [
+    "PatchInf",
+    "ReplaceDriverInShell",
+    "PackageArtifacts"
+  ]
+}
