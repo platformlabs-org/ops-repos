@@ -41,13 +41,39 @@ if (-not $productId -or -not $submissionId) {
     exit 1
 }
 
-# 2. Determine Pipeline
+# 2. Authenticate & Determine Pipeline
+$pcToken = Get-PartnerCenterToken -ClientId $env:PARTNER_CENTER_CLIENT_ID -ClientSecret $env:PARTNER_CENTER_CLIENT_SECRET -TenantId $env:PARTNER_CENTER_TENANT_ID
+
 $productRoutingPath = Join-Path $RepoRoot "config\mapping\product_routing.json"
-$pipelineName = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
+$infRulesPath = Join-Path $RepoRoot "config\inf_patch_rules.json"
+
+$pipelineName = $null
+
+# Load INF rules if available
+$infRules = if (Test-Path $infRulesPath) { Get-Content $infRulesPath | ConvertFrom-Json } else { $null }
+
+# Check if project has specific INF patch rules
+if ($infRules -and $infRules.project -and $infRules.project."$projectName") {
+    Write-Log "Project '$projectName' found in inf_patch_rules. Fetching Submission Name to determine pipeline."
+    try {
+        $meta = Get-DriverMetadata -SubmissionId $submissionId -Token $pcToken
+        $submissionName = $meta.name
+        Write-Log "Submission Name: $submissionName"
+
+        # Route based on Submission Name
+        $pipelineName = Select-Pipeline -ProductName $submissionName -MappingFile $productRoutingPath
+    } catch {
+        Write-Error "Failed to determine pipeline from submission metadata: $_"
+        exit 1
+    }
+} else {
+    # Fallback to Project Name routing
+    $pipelineName = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
+}
+
 Write-Log "Selected Pipeline: $pipelineName"
 
 # 3. Download Driver & DuaShell
-$pcToken = Get-PartnerCenterToken -ClientId $env:PARTNER_CENTER_CLIENT_ID -ClientSecret $env:PARTNER_CENTER_CLIENT_SECRET -TenantId $env:PARTNER_CENTER_TENANT_ID
 $tempDir = Get-TempDirectory
 $downloads = Get-SubmissionPackage -SubmissionId $submissionId -Token $pcToken -DownloadPath $tempDir
 
