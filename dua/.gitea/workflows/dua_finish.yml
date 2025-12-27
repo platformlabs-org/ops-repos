@@ -1,0 +1,81 @@
+name: DUA Finish
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  finish:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'dua/issue-')
+    runs-on: [RUNNER-WHQL]
+    env:
+      GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
+      PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+    steps:
+      - name: Checkout Merged Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Extract Issue Number
+        shell: pwsh
+        run: |
+          # Branch format: dua/issue-<number>/base
+          $ref = "${{ github.event.pull_request.base.ref }}"
+          if ($ref -match "dua/issue-(\d+)/base") {
+              $issueNumber = $matches[1]
+              "ISSUE_NUMBER=$issueNumber" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Write-Error "Could not extract issue number from ref: $ref"
+          }
+
+      - name: Parse Issue & Configuration
+        shell: pwsh
+        run: |
+          ./scripts/steps/1_ParseConfig.ps1 -IssueNumber $env:ISSUE_NUMBER -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+
+      - name: Download Assets
+        shell: pwsh
+        run: ./scripts/steps/2_DownloadAssets.ps1
+
+      - name: Restore Driver (Apply Merged Changes)
+        shell: pwsh
+        run: ./scripts/steps/3_RestoreDriver.ps1
+
+      - name: Update HLKX
+        shell: pwsh
+        run: ./scripts/steps/4_UpdateHlkx.ps1
+
+      - name: Package Results
+        shell: pwsh
+        run: ./scripts/steps/5_PackageResults.ps1
+
+      - name: Notify User
+        shell: pwsh
+        run: |
+          ./scripts/steps/6_Notify.ps1 -IssueNumber $env:ISSUE_NUMBER -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+
+      - name: Cleanup Branches
+        shell: pwsh
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          $repoOwner = "${{ github.repository_owner }}"
+          $repoName = "${{ github.event.repository.name }}"
+          $token = "${{ secrets.BOTTOKEN }}"
+          $serverUrl = $env:GITHUB_SERVER_URL
+          if (-not $serverUrl) { $serverUrl = "https://gitea.example.com" }
+
+          # Fix protocol if needed or just replace
+          $remoteUrl = "$serverUrl/$repoOwner/$repoName.git".Replace("://", "://$($repoOwner):$($token)@")
+
+          git remote set-url origin $remoteUrl
+
+          Write-Host "Deleting branch $env:HEAD_REF"
+          git push origin --delete $env:HEAD_REF
+
+          Write-Host "Deleting branch $env:BASE_REF"
+          git push origin --delete $env:BASE_REF
