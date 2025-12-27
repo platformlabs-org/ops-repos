@@ -19,10 +19,11 @@ function Get-PartnerCenterToken {
 
 function Get-DriverMetadata {
     param(
+        $ProductId,
         $SubmissionId,
         $Token
     )
-    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/submissions/$SubmissionId"
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions/$SubmissionId/"
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
@@ -31,6 +32,7 @@ function Get-DriverMetadata {
 
 function Get-SubmissionPackage {
      param(
+        $ProductId,
         $SubmissionId,
         $Token,
         $DownloadPath
@@ -40,9 +42,9 @@ function Get-SubmissionPackage {
     # REAL IMPLEMENTATION SKELETON (Commented Out)
     # -------------------------------------------------------------------------
     #
-    # $meta = Get-DriverMetadata -SubmissionId $SubmissionId -Token $Token
-    # $driverAsset = $meta.downloads | Where-Object { $_.type -eq 'driver' }
-    # $shellAsset = $meta.downloads | Where-Object { $_.type -eq 'duashell' }
+    # $meta = Get-DriverMetadata -ProductId $ProductId -SubmissionId $SubmissionId -Token $Token
+    # $driverAsset = $meta.downloads.items | Where-Object { $_.type -eq 'initialPackage' }
+    # $shellAsset = $meta.downloads.items | Where-Object { $_.type -eq 'derivedPackage' }
     #
     # if (-not $driverAsset -or -not $shellAsset) { throw "Assets not found" }
     #
@@ -146,7 +148,7 @@ function Get-SubmissionStatus {
         $SubmissionId,
         $Token
     )
-    $uri = "https://api.partner.microsoft.com/v1.0/ingestion/products/$ProductId/submissions/$SubmissionId"
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions/$SubmissionId/"
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
