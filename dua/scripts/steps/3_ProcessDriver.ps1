@@ -57,6 +57,17 @@ foreach ($inf in $infs) {
     }
 }
 
+# Normalize INFs to UTF-16LE for consistent Git handling
+Write-Log "Normalizing INFs to UTF-16LE..."
+$workDirInfs = Get-ChildItem -Path $workDir -Recurse -Filter "*.inf"
+foreach ($inf in $workDirInfs) {
+    $content = Get-Content -LiteralPath $inf.FullName -Raw
+    $content | Out-File -LiteralPath $inf.FullName -Encoding Unicode -Force
+}
+
+# Create .gitattributes to ensure INFs are treated as text in PR
+Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16LE"
+
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
 $branchBase  = "dua/issue-$issueNumber/base"
