@@ -54,6 +54,10 @@ if ($submissionName -and $projectName) {
         -SubmissionName $submissionName `
         -Status "Complete" `
         -InfStrategy $infStrategy
+
+    # Close the Issue as well, since PR was merged and process is complete.
+    Set-IssueState -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -State "closed" -Token $token | Out-Null
+    Write-Log "Issue #$IssueNumber closed."
 } else {
     Write-Warning "Missing SubmissionName or ProjectName. Skipping metadata update."
 }

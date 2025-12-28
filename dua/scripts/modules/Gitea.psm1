@@ -251,6 +251,75 @@ function Add-IssueLabels {
     }
 }
 
+function Set-IssueState {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [int]$IssueNumber,
+        [string]$State, # closed or open
+        [string]$Token
+    )
+
+    $api = Get-GiteaApiBase
+    # PATCH /repos/{owner}/{repo}/issues/{index}
+    $uri = "$api/repos/$Owner/$Repo/issues/$IssueNumber"
+    Write-Host "[Gitea] PATCH $uri (State Update: $State)"
+
+    $headers = New-GiteaHeaders -Token $Token
+    $headers["Content-Type"] = "application/json"
+
+    $payload = @{ state = $State } | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Patch -Headers $headers -Body $payload
+    } catch {
+        throw "Set-IssueState failed. URI=$uri :: $($_.Exception.Message)"
+    }
+}
+
+function Get-PullRequests {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [string]$State = "open",
+        [string]$Token
+    )
+
+    $api = Get-GiteaApiBase
+    # GET /repos/{owner}/{repo}/pulls
+    $uri = "$api/repos/$Owner/$Repo/pulls?state=$State"
+    Write-Host "[Gitea] GET $uri"
+
+    $headers = New-GiteaHeaders -Token $Token
+    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+}
+
+function Set-PullRequestState {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [int]$Index,
+        [string]$State, # closed or open
+        [string]$Token
+    )
+
+    $api = Get-GiteaApiBase
+    # PATCH /repos/{owner}/{repo}/pulls/{index}
+    $uri = "$api/repos/$Owner/$Repo/pulls/$Index"
+    Write-Host "[Gitea] PATCH $uri (State Update: $State)"
+
+    $headers = New-GiteaHeaders -Token $Token
+    $headers["Content-Type"] = "application/json"
+
+    $payload = @{ state = $State } | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Patch -Headers $headers -Body $payload
+    } catch {
+        throw "Set-PullRequestState failed. URI=$uri :: $($_.Exception.Message)"
+    }
+}
+
 # ✅ 一步：先建comment，再把文件作为该comment附件上传
 function Post-CommentWithAttachments {
     param(
@@ -333,4 +402,5 @@ function New-PullRequest {
 Export-ModuleMember -Function `
     Get-Issue, Post-Comment, Get-Comments, `
     Upload-IssueAttachment, Upload-CommentAttachment, Post-CommentWithAttachments, `
-    New-PullRequest, Set-IssueTitle, Add-IssueLabels
+    New-PullRequest, Set-IssueTitle, Add-IssueLabels, `
+    Set-IssueState, Get-PullRequests, Set-PullRequestState
