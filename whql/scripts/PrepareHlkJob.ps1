@@ -72,7 +72,11 @@ if ($driverProject -eq $signOption) {
 
 Write-Host "[Prepare] Determined Mode: $mode"
 
-# 3. Validate Inputs & Attachments
+# 3. Add Labels
+$label = if ($mode -eq 'SIGN') { 'SIGN' } else { 'WHQL' }
+Add-OpsIssueLabels -Repo $Repository -Number $IssueNumber -Token $AccessToken -Labels @($label)
+
+# 4. Validate Inputs & Attachments
 $attachments = $issue.assets
 if (-not $attachments -or $attachments.Count -eq 0) {
     throw "[Prepare] No attachments found. Please upload files."
@@ -140,7 +144,7 @@ if ($mode -eq 'SIGN') {
     }
 }
 
-# 4. Set Outputs
+# 5. Set Outputs
 $ghOutput = $env:GITHUB_OUTPUT
 if (-not $ghOutput) {
     Write-Host "[Prepare] GITHUB_OUTPUT not set, printing values to console only."

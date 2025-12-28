@@ -196,10 +196,32 @@ function Set-OpsIssueTitle {
     }
 }
 
+function Add-OpsIssueLabels {
+    param(
+        [Parameter(Mandatory)] [string]$Repo,
+        [Parameter(Mandatory)] [string]$Number,
+        [Parameter(Mandatory)] [string]$Token,
+        [Parameter(Mandatory)] [string[]]$Labels
+    )
+
+    $baseUrl = Get-BaseUrl
+    $url = "$baseUrl/$Repo/issues/$Number/labels"
+    $headers = New-OpsAuthHeader -Token $Token
+
+    $body = @{ labels = $Labels } | ConvertTo-Json
+
+    Write-Host "[OpsApi] POST add labels to issue #$Number: $($Labels -join ', ')"
+
+    Invoke-WithRetry -Action {
+        Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body -ContentType "application/json"
+    }
+}
+
 Export-ModuleMember -Function `
     Get-OpsIssue, `
     Get-OpsIssueComments, `
     Invoke-OpsDownloadFile, `
     New-OpsIssueComment, `
     Upload-OpsCommentAttachment, `
-    Set-OpsIssueTitle
+    Set-OpsIssueTitle, `
+    Add-OpsIssueLabels

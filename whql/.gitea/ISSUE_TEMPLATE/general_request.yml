@@ -1,8 +1,6 @@
 name: General WHQL/Sign Request
 about: Request to build WHQL package or sign existing HLKX
 title: "[Request]: "
-labels:
-  - WHQL
 
 body:
   - type: markdown

@@ -48,26 +48,30 @@ if ([string]::IsNullOrWhiteSpace($builtBaseName)) {
 }
 else {
     $newTitle     = $null
-    $trimmedTitle = $currentTitle.Trim()
 
-    if ($trimmedTitle.StartsWith('[HLKX Sign Request]:', [System.StringComparison]::OrdinalIgnoreCase)) {
-        if ($trimmedTitle.StartsWith('[HLKX Done]:', [System.StringComparison]::OrdinalIgnoreCase)) {
-            Write-Host "[Publish] Title already in 'HLKX Done' state, skip."
-        }
-        else {
-            $newTitle = "[HLKX Done]: $builtBaseName"
-        }
-    }
-    elseif ($trimmedTitle.StartsWith('[Driver WHQL Request]:', [System.StringComparison]::OrdinalIgnoreCase)) {
-        if ($trimmedTitle.StartsWith('[WHQL Done]:', [System.StringComparison]::OrdinalIgnoreCase)) {
-            Write-Host "[Publish] Title already in 'WHQL Done' state, skip."
-        }
-        else {
-            $newTitle = "[WHQL Done]:$builtBaseName"
-        }
+    # Check current label to decide title format
+    # But issue labels are arrays, let's look at issue state.
+    # Actually, we can infer mode from the filename or just apply the logic requested.
+
+    # User Request:
+    # [WHQL Done]:Lenovo Dispatcher-3.2.100.5-AMD64-1228014244
+    # [HLKX Signed]{OriginalFileName}
+
+    # RunHlkJob names:
+    # WHQL: "$DriverProject-$DriverVersion-$Architecture-$timestamp"
+    # SIGN: "${safeBaseName}_Signed.hlkx"
+
+    # If it ends with _Signed, it's SIGN mode (heuristic)
+    if ($builtBaseName.EndsWith("_Signed")) {
+        # Extract Original Name: Remove _Signed
+        $originalName = $builtBaseName.Substring(0, $builtBaseName.Length - 7)
+        $newTitle = "[HLKX Signed] $originalName"
     }
     else {
-        Write-Host "[Publish] Title does not match known request patterns, skip updating."
+        # WHQL Mode
+        # The filename IS the format we want: "Lenovo Dispatcher-3.2.100.5-AMD64-1228014244"
+        # We just need to prepend "[WHQL Done]:"
+        $newTitle = "[WHQL Done]:$builtBaseName"
     }
 
     if ($null -ne $newTitle -and $newTitle -ne $currentTitle) {
