@@ -11,7 +11,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'OpsApi.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
 
 if (-not (Test-Path $FilePath)) {
     throw "[Publish] File not found: $FilePath"
@@ -21,18 +22,18 @@ Write-Host "[Publish] Starting PublishHlkResult.ps1"
 
 $commentText = "HLKX package generated successfully. See attached file."
 
-# 1. 创建评论
+# 1. Create Comment
 $comment = New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $commentText
 if (-not $comment -or -not $comment.id) {
     throw "[Publish] Failed to create comment on issue #$IssueNumber"
 }
 
-# 2. 上传附件
+# 2. Upload Attachment
 Upload-OpsCommentAttachment -Repo $Repository -CommentId $comment.id -Token $AccessToken -Path $FilePath
 
 Write-Host "[Publish] Attachment uploaded, updating issue title..."
 
-# 3. 根据标题和生成的 HLKX 修改为 Done
+# 3. Update Title to Done
 $issue = Get-OpsIssue -Repo $Repository -Number $IssueNumber -Token $AccessToken
 if (-not $issue) {
     throw "[Publish] Failed to load issue #$IssueNumber for title update"
@@ -70,7 +71,6 @@ else {
     }
 
     if ($null -ne $newTitle -and $newTitle -ne $currentTitle) {
-        Write-Host "[Publish] Updating issue title: '$currentTitle' -> '$newTitle'"
         Set-OpsIssueTitle -Repo $Repository -Number $IssueNumber -Token $AccessToken -Title $newTitle
     }
 }

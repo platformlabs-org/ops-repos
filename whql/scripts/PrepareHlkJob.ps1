@@ -13,61 +13,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# 导入封装好的 HTTP 模块
-Import-Module (Join-Path $PSScriptRoot 'OpsApi.psm1') -Force
-
-function Get-FormFieldValue {
-    param(
-        [string]$Body,
-        [string]$Heading
-    )
-    # 匹配类似：
-    # ### Driver Project
-    # Dispatcher
-    $pattern = "###\s+$Heading\s+(.+?)(\r?\n###|\r?\n$)"
-    $match = [regex]::Match($Body, $pattern, 'Singleline')
-    if ($match.Success) {
-        return $match.Groups[1].Value.Trim()
-    }
-    else {
-        return ""
-    }
-}
-
-function Map-DriverProjectName {
-    param([string]$Project)
-
-    $map = @{
-        'Lenovo Dispatcher'         = 'Dispatcher3.1.x'
-        'Lenovo SensorFusion'       = 'SensorFusion2.0.0.x'
-        'Lenovo DisplayEnhancement' = 'DisplayEnhancement0.1.0.x'
-        'Lenovo Monitor'            = 'HDRDisplay'
-        'Lenovo AIFW Service'       = 'AIFW'
-        'Lenovo Tap-to-X Service'   = 'Tap-to-X'
-        'Lenovo VirtualDisplay'     = 'VirtualDisplay'
-    }
-
-    if ($map.ContainsKey($Project)) {
-        return $map[$Project]
-    }
-
-    throw "Unknown driver project: $Project"
-}
-
-function Map-ArchitectureFolder {
-    param([string]$Architecture)
-
-    $map = @{
-        'AMD64' = 'amd64'
-        'ARM64' = 'arm64'
-    }
-
-    if ($map.ContainsKey($Architecture)) {
-        return $map[$Architecture]
-    }
-
-    throw "Unsupported architecture: $Architecture"
-}
+# Import Modules
+Import-Module (Join-Path $PSScriptRoot 'modules/Config.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
 
 function Get-DriverFolderFromArchive {
     param([string]$ArchivePath)
@@ -103,14 +52,13 @@ Write-Host "[Prepare] Starting PrepareHlkJob.ps1"
 Write-Host "[Prepare] Mode: $Mode"
 
 $normalizedMode = $Mode.ToUpperInvariant()
+$config = Get-WhqlConfig
 
-# 使用模块的 HTTP 封装
 $issue = Get-OpsIssue -Repo $Repository -Number $IssueNumber -Token $AccessToken
 
 $bodyText = $issue.body
 $driverProject = Get-FormFieldValue -Body $bodyText -Heading "Driver Project"
 if ([string]::IsNullOrWhiteSpace($driverProject)) {
-    # 兼容旧模板的字段名
     $driverProject = Get-FormFieldValue -Body $bodyText -Heading "filetype"
 }
 $architecture = Get-FormFieldValue -Body $bodyText -Heading "Architecture"
@@ -130,8 +78,8 @@ if (-not $attachments -or $attachments.Count -eq 0) {
 }
 
 $hlkxTemplateFolder = ""
-$driverFolder        = ""
-$inputHlkxFile       = ""
+$driverFolder       = ""
+$inputHlkxFile      = ""
 
 $tempDownloadDir = Join-Path (Get-Location) "temp\downloads"
 if (-not (Test-Path $tempDownloadDir)) {
@@ -140,7 +88,6 @@ if (-not (Test-Path $tempDownloadDir)) {
 
 switch ($normalizedMode) {
     'SIGN' {
-        # SIGN 模式：只接受 HLKX
         $hlkxAsset = $attachments | Where-Object { $_.name -like '*.hlkx' } | Select-Object -First 1
         if (-not $hlkxAsset) {
             throw "[Prepare] SIGN mode requires at least one HLKX attachment."
@@ -154,12 +101,10 @@ switch ($normalizedMode) {
         Write-Host "[Prepare] HLKX file: $inputHlkxFile"
     }
     'WHQL' {
-        # WHQL 模式：需要项目/架构 + driver 包
         if ([string]::IsNullOrWhiteSpace($driverProject) -or [string]::IsNullOrWhiteSpace($architecture)) {
             throw "[Prepare] Driver project and architecture are required for WHQL mode."
         }
 
-        # 选第一个非 HLKX 附件作为 driver 包
         $driverAsset = $attachments | Where-Object { $_.name -notlike '*.hlkx' } | Select-Object -First 1
         if (-not $driverAsset) {
             throw "[Prepare] WHQL mode requires a driver package attachment (non-HLKX)."
@@ -168,9 +113,18 @@ switch ($normalizedMode) {
         $localArchivePath = Join-Path $tempDownloadDir $driverAsset.name
         Invoke-OpsDownloadFile -Url $driverAsset.browser_download_url -TargetPath $localArchivePath -Token $AccessToken
 
-        $driverFolder   = Get-DriverFolderFromArchive -ArchivePath $localArchivePath
-        $mappedProject  = Map-DriverProjectName   -Project $driverProject
-        $archFolder     = Map-ArchitectureFolder  -Architecture $architecture
+        $driverFolder = Get-DriverFolderFromArchive -ArchivePath $localArchivePath
+
+        # Use Config Mappings
+        if (-not $config.DriverProjectMap.$driverProject) {
+            throw "Unknown driver project: $driverProject. Available: $($config.DriverProjectMap | ConvertTo-Json -Depth 1)"
+        }
+        $mappedProject = $config.DriverProjectMap.$driverProject
+
+        if (-not $config.ArchitectureMap.$architecture) {
+            throw "Unsupported architecture: $architecture. Available: $($config.ArchitectureMap | ConvertTo-Json -Depth 1)"
+        }
+        $archFolder = $config.ArchitectureMap.$architecture
 
         $hlkxTemplateFolder = Join-Path $HlkxRootPath (Join-Path $mappedProject $archFolder)
         Write-Host "[Prepare] MODE = WHQL"
@@ -190,7 +144,6 @@ switch ($normalizedMode) {
     }
 }
 
-# 输出给 Workflow
 $ghOutput = $env:GITHUB_OUTPUT
 if (-not $ghOutput) {
     Write-Host "[Prepare] GITHUB_OUTPUT not set, printing values to console only."

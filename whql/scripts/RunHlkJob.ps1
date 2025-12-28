@@ -11,30 +11,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Get-SafeFileName {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Name
-    )
-
-    $invalidChars = [IO.Path]::GetInvalidFileNameChars()
-    $sb = New-Object System.Text.StringBuilder
-
-    foreach ($ch in $Name.ToCharArray()) {
-        if ($invalidChars -contains $ch) {
-            [void]$sb.Append('_')
-        } else {
-            [void]$sb.Append($ch)
-        }
-    }
-
-    $result = $sb.ToString().Trim()
-    if ([string]::IsNullOrWhiteSpace($result)) {
-        $result = "HLKX"
-    }
-
-    return $result
-}
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
 
 Write-Host "[Run] Starting RunHlkJob.ps1"
 Write-Host "[Run] Mode          : $Mode"
@@ -50,7 +27,6 @@ if (-not (Test-Path $outDir)) {
     New-Item -Path $outDir -ItemType Directory | Out-Null
 }
 
-# 时间戳格式：MMDDHHmmss
 $timestamp = Get-Date -Format "MMddHHmmss"
 
 $outputFileName  = ""
@@ -59,17 +35,12 @@ $hlkxToolArgs    = @()
 
 switch ($Mode.ToUpperInvariant()) {
     'WHQL' {
-        if (-not (Test-Path $TemplateFolder)) {
-            throw "[Run] TemplateFolder does not exist: $TemplateFolder"
-        }
-        if (-not (Test-Path $DriverFolder)) {
-            throw "[Run] DriverFolder does not exist: $DriverFolder"
-        }
+        if (-not (Test-Path $TemplateFolder)) { throw "[Run] TemplateFolder does not exist: $TemplateFolder" }
+        if (-not (Test-Path $DriverFolder))   { throw "[Run] DriverFolder does not exist: $DriverFolder" }
 
         if ([string]::IsNullOrWhiteSpace($DriverProject)) { $DriverProject = "UnknownProject" }
         if ([string]::IsNullOrWhiteSpace($Architecture))  { $Architecture  = "UnknownArch" }
 
-        # 如果 DriverVersion 是空 或 _No response_，则不写入文件名
         $useVersion = $true
         if ([string]::IsNullOrWhiteSpace($DriverVersion) -or $DriverVersion -eq '_No response_') {
             $useVersion = $false
@@ -77,8 +48,7 @@ switch ($Mode.ToUpperInvariant()) {
 
         if ($useVersion) {
             $rawName = "$DriverProject-$DriverVersion-$Architecture-$timestamp"
-        }
-        else {
+        } else {
             $rawName = "$DriverProject-$Architecture-$timestamp"
         }
 
@@ -86,15 +56,11 @@ switch ($Mode.ToUpperInvariant()) {
         $outputFileName = "$safeName.hlkx"
         $outputFullPath = Join-Path $outDir $outputFileName
 
-        # 把完整路径传给 HlkxTool
         $hlkxToolArgs = @('WHQL', $TemplateFolder, $DriverFolder, $outputFullPath)
     }
     'SIGN' {
-        if (-not (Test-Path $InputHlkxFile)) {
-            throw "[Run] InputHlkxFile does not exist: $InputHlkxFile"
-        }
+        if (-not (Test-Path $InputHlkxFile)) { throw "[Run] InputHlkxFile does not exist: $InputHlkxFile" }
 
-        # HLKX只签名时，在源文件名称加上 _Signed 即可（不加时间戳）
         $baseName     = [IO.Path]::GetFileNameWithoutExtension($InputHlkxFile)
         $safeBaseName = Get-SafeFileName -Name $baseName
 
@@ -109,9 +75,11 @@ switch ($Mode.ToUpperInvariant()) {
 }
 
 Write-Host "[Run] Output HLKX file: $outputFullPath"
-Write-Host "[Run] Running HlkxTool.exe $($hlkxToolArgs -join ' ')"
+$hlkxTool = Get-HlkxToolPath
 
-& .\HlkxTool\HlkxTool.exe @hlkxToolArgs
+Write-Host "[Run] Running $hlkxTool $($hlkxToolArgs -join ' ')"
+
+& $hlkxTool @hlkxToolArgs
 if ($LASTEXITCODE -ne 0) {
     throw "[Run] HlkxTool.exe failed with exit code $LASTEXITCODE"
 }
