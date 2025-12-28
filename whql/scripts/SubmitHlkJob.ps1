@@ -124,6 +124,7 @@ try {
     $newProduct = New-Product `
         -Name $fullName `
         -Token $pcToken `
+        -TestHarness "hlk" `
         -SelectedProductTypes $hlkxInfo.selectedProductTypes `
         -RequestedSignatures $hlkxInfo.requestedSignatures `
         -DeviceMetadataCategory $hlkxInfo.deviceMetadataCategory
@@ -135,7 +136,7 @@ try {
     $submissionName = $fullName
     Write-Host "[Submit] Creating Submission: $submissionName"
 
-    $submission = New-Submission -ProductId $productId -Token $pcToken -Name $submissionName -Type "HardwareCertification"
+    $submission = New-Submission -ProductId $productId -Token $pcToken -Name $submissionName -Type "initial"
     $submissionId = $submission.id
     Write-Host "[Submit] Created Submission ID: $submissionId"
 

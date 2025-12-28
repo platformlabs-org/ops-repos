@@ -352,7 +352,7 @@ function New-Submission {
         $ProductId,
         $Token,
         $Name,
-        $Type = "derived"
+        $Type
     )
     # POST https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/{productID}/submissions
     $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId/submissions"

@@ -302,7 +302,7 @@ function New-Product {
 
     $bodyObj = @{
         productName = $Name
-        testHarness = "hlk"
+        testHarness = $TestHarness
         deviceType = $DeviceType
         isTestSign = $IsTestSign
         isFlightSign = $IsFlightSign
