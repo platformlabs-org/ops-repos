@@ -1,6 +1,6 @@
 name: DUA Request
 about: Request for Data Use Agreement (DUA) approval
-title: "[DUA] "
+title: "[DUA Request] "
 body:
   - type: input
     id: project_name

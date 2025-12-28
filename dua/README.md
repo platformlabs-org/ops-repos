@@ -6,7 +6,7 @@
 
 ## 📚 用户指南 (User Guide)
 
-本指南面向 **Driver SA** (Service Agents) 及相关开发人员。
+本指南面向 **Driver SA** 及相关开发人员。
 
 ### 1. 创建 DUA 请求
 1.  进入 Gitea 仓库的 **Issues** 页面。
