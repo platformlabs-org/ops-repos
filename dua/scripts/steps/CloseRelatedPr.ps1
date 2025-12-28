@@ -14,7 +14,6 @@ Import-Module (Join-Path $ModulesPath "Gitea.psm1")  -Force
 Write-Log "Checking for Open PRs related to Issue #$IssueNumber..."
 
 $token = $env:GITHUB_TOKEN
-if (-not $token) { $token = $env:GITEA_TOKEN }
 if (-not $token) { $token = $env:BOTTOKEN }
 
 # Expected branch pattern

@@ -15,4 +15,4 @@ jobs:
       - name: Close Related PR
         shell: pwsh
         run: |
-           ./dua/scripts/steps/CloseRelatedPr.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+           ./scripts/steps/CloseRelatedPr.ps1 -IssueNumber ${{ github.event.issue.number }} -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
