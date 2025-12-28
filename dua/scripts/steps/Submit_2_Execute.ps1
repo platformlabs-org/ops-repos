@@ -25,6 +25,11 @@ $submissionId = $env:SUBMISSION_ID
 
 if (-not $productId -or -not $hlkxUrl) { throw "Missing input env vars." }
 
+# Get Token for Gitea/GitHub API
+$token = $env:GITHUB_TOKEN
+if (-not $token) { $token = $env:GITEA_TOKEN }
+if (-not $token) { $token = $env:BOTTOKEN }
+
 # 1. Download HLKX
 $workspace = $env:GITHUB_WORKSPACE
 if (-not $workspace) { $workspace = Get-Location }
@@ -33,7 +38,12 @@ New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 
 $hlkxPath = Join-Path $tempDir "submission.hlkx"
 Write-Log "Downloading HLKX to $hlkxPath"
-Invoke-WebRequest -Uri $hlkxUrl -OutFile $hlkxPath
+
+$headers = @{}
+if ($token) {
+    $headers["Authorization"] = "token $token"
+}
+Invoke-WebRequest -Uri $hlkxUrl -OutFile $hlkxPath -Headers $headers
 
 # 2. Submit to Partner Center
 $pcToken = Get-PartnerCenterToken `
@@ -146,10 +156,6 @@ try {
     Write-Log "Submission Committed."
 
     # Notify
-    $token = $env:GITHUB_TOKEN
-    if (-not $token) { $token = $env:GITEA_TOKEN }
-    if (-not $token) { $token = $env:BOTTOKEN }
-
     $dashboardUrl = "https://partner.microsoft.com/en-us/dashboard/hardware/driver/$productId"
     $msg = "✅ Submission **$newSubmissionId** committed successfully.`n`n[查看提交]($dashboardUrl)"
 
