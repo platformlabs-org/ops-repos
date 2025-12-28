@@ -12,6 +12,7 @@ jobs:
       PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
       PARTNER_CENTER_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
       PARTNER_CENTER_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+      DUA_TEAMS_WEBHOOK_URL: ${{ secrets.DUA_TEAMS_WEBHOOK_URL }}
     steps:
       - name: Checkout Merged Code
         uses: actions/checkout@v3
