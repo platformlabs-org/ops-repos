@@ -164,7 +164,7 @@ try {
 **HLKX:** $selectedHlkxName
 **Status:** Committed (Processing started)
 
-[View in Partner Center](https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$productId/submissions/$submissionId)
+[View in Partner Center](https://partner.microsoft.com/en-us/dashboard/hardware/driver/$productId)
 "@
 
     New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
