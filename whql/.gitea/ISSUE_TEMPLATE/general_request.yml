@@ -1,6 +1,6 @@
-name: Driver WHQL Request
-about: Request to build and sign a WHQL HLKX package from a driver package
-title: "[Driver WHQL Request]: "
+name: General WHQL/Sign Request
+about: Request to build WHQL package or sign existing HLKX
+title: "[Request]: "
 labels:
   - WHQL
 
@@ -8,15 +8,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        This template is for **WHQL HLKX build** requests.
+        This template is for **WHQL Build** or **HLKX Sign** requests.
 
-        - Please select the driver project and architecture.
-        - Please upload a **driver package (.zip)** as an attachment **after** creating this issue.
-        - The system will:
-          - Merge all template HLKX for the selected project + architecture
-          - Inject your driver
-          - Sign the final HLKX
-          - Attach the result back to this issue
+        **Instructions:**
+        1. Select the **Driver Project**.
+           - For **WHQL Build**: Select your specific project (e.g., Lenovo Dispatcher). You **MUST** upload a `.zip` driver package.
+           - For **Signing**: Select `HLKX Sign Request`. You **MUST** upload an `.hlkx` file.
+        2. Select the **Architecture**.
+        3. Enter the **Driver Version**.
+        4. **After creating the issue**, upload the required attachment (.zip or .hlkx).
 
   - type: dropdown
     id: driver_project
@@ -31,6 +31,7 @@ body:
         - Lenovo AIFW Service
         - Lenovo Tap-to-X Service
         - Lenovo VirtualDisplay
+        - HLKX Sign Request
     validations:
       required: true
 
@@ -51,7 +52,7 @@ body:
       label: Driver Version
       placeholder: e.g., 3.2.0.12
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: notes
@@ -59,5 +60,3 @@ body:
       label: Notes
       description: |
         Add any additional information here.
-
-        **Important:** upload your driver package (.zip) as an issue attachment after creating this issue.
