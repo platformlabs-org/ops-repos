@@ -11,6 +11,7 @@ $ModulesPath = Join-Path $ScriptRoot "..\modules"
 Import-Module (Join-Path $ModulesPath "Common.psm1") -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")  -Force
 Import-Module (Join-Path $ModulesPath "Metadata.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Teams.psm1")    -Force
 
 Write-Log "Step 6: Notify User"
 
@@ -41,6 +42,23 @@ if ($files.Count -gt 0) {
       -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
       -Body "⚠️ Processing complete for $infStrategy, but no artifacts were generated." `
       -Token $token | Out-Null
+}
+
+# Teams Notification (Complete)
+if ($submissionName -and $projectName) {
+    # Need issue creator for ToUpn
+    $issue = Get-Issue -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Token $token
+    $creatorEmail = $issue.user.email
+    if (-not $creatorEmail) { $creatorEmail = $issue.user.login }
+
+    $ver = Get-ShortVersion -Name $submissionName
+    Send-TeamsNotification `
+        -EventType "DUA_REQUEST_PROCESS_COMPLETE" `
+        -ToUpn $creatorEmail `
+        -Project $projectName `
+        -Version $ver `
+        -IssueUrl $issue.html_url `
+        -Message "替换完成，可查看 Issue 记录。可进一步submit"
 }
 
 # Update Issue Metadata (Complete)

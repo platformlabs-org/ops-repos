@@ -14,6 +14,7 @@ Import-Module (Join-Path $ModulesPath "Gitea.psm1")         -Force
 Import-Module (Join-Path $ModulesPath "PartnerCenter.psm1") -Force
 Import-Module (Join-Path $ModulesPath "DriverPipeline.psm1") -Force
 Import-Module (Join-Path $ModulesPath "Metadata.psm1")       -Force
+Import-Module (Join-Path $ModulesPath "Teams.psm1")          -Force
 
 Write-Log "Step 2: Execute Submission"
 
@@ -156,6 +157,23 @@ try {
         -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
         -Body $msg `
         -Token $token | Out-Null
+
+    # Teams Notification (Submitted)
+    if ($originalSubmissionName -ne "Unknown") {
+        $issue = Get-Issue -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Token $token
+        $creatorEmail = $issue.user.email
+        if (-not $creatorEmail) { $creatorEmail = $issue.user.login }
+
+        $ver = Get-ShortVersion -Name $originalSubmissionName
+
+        Send-TeamsNotification `
+            -EventType "DUA_REQUEST_SUBMITTED" `
+            -ToUpn $creatorEmail `
+            -Project $projectName `
+            -Version $ver `
+            -PartnerCenterUrl $dashboardUrl `
+            -Message "已提交到 Partner Center。"
+    }
 
     # Update Issue Metadata (submitted)
     if ($originalSubmissionName -ne "Unknown") {
