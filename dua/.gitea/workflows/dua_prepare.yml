@@ -1,7 +1,7 @@
 name: DUA Prepare
 on:
   issues:
-    types: [opened, reopened, edited]
+    types: [opened, reopened]
 
 jobs:
   prepare:
