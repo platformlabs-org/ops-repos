@@ -71,7 +71,7 @@ else {
         # WHQL Mode
         # The filename IS the format we want: "Lenovo Dispatcher-3.2.100.5-AMD64-1228014244"
         # We just need to prepend "[WHQL Done]:"
-        $newTitle = "[WHQL Done]:${builtBaseName}"
+        $newTitle = "[WHQL Done]:$builtBaseName"
     }
 
     if ($null -ne $newTitle -and $newTitle -ne $currentTitle) {

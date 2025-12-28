@@ -17,25 +17,37 @@ jobs:
       - name: Prepare Job
         id: prepare
         shell: pwsh
+        env:
+          REPO: ${{ gitea.repository }}
+          ISSUE_NUM: ${{ gitea.event.issue.number }}
+          TOKEN: ${{ secrets.BOTTOKEN }}
         run: |
           ./scripts/PrepareHlkJob.ps1 `
-            -Repository '${{ gitea.repository }}' `
-            -IssueNumber '${{ gitea.event.issue.number }}' `
-            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -Repository $env:REPO `
+            -IssueNumber $env:ISSUE_NUM `
+            -AccessToken $env:TOKEN `
             -HlkxRootPath '.\HLKX'
 
       - name: Run Job
         id: run
         shell: pwsh
+        env:
+          MODE: ${{ steps.prepare.outputs.mode }}
+          TMPL_FOLDER: ${{ steps.prepare.outputs.hlkx_template_folder }}
+          INPUT_FILE: ${{ steps.prepare.outputs.input_hlkx_file }}
+          DRV_FOLDER: ${{ steps.prepare.outputs.driver_folder }}
+          DRV_PROJ: ${{ steps.prepare.outputs.driver_project }}
+          ARCH: ${{ steps.prepare.outputs.architecture }}
+          VER: ${{ steps.prepare.outputs.driver_version }}
         run: |
           ./scripts/RunHlkJob.ps1 `
-            -Mode '${{ steps.prepare.outputs.mode }}' `
-            -TemplateFolder '${{ steps.prepare.outputs.hlkx_template_folder }}' `
-            -InputHlkxFile '${{ steps.prepare.outputs.input_hlkx_file }}' `
-            -DriverFolder '${{ steps.prepare.outputs.driver_folder }}' `
-            -DriverProject '${{ steps.prepare.outputs.driver_project }}' `
-            -Architecture '${{ steps.prepare.outputs.architecture }}' `
-            -DriverVersion '${{ steps.prepare.outputs.driver_version }}'
+            -Mode $env:MODE `
+            -TemplateFolder $env:TMPL_FOLDER `
+            -InputHlkxFile $env:INPUT_FILE `
+            -DriverFolder $env:DRV_FOLDER `
+            -DriverProject $env:DRV_PROJ `
+            -Architecture $env:ARCH `
+            -DriverVersion $env:VER
 
       - name: Publish Result
         shell: pwsh
