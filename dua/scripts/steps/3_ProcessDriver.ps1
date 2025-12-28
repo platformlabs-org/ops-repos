@@ -9,6 +9,7 @@ Import-Module (Join-Path $ModulesPath "Common.psm1")   -Force
 Import-Module (Join-Path $ModulesPath "InfPatch.psm1") -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")    -Force
 Import-Module (Join-Path $ModulesPath "Metadata.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Teams.psm1")    -Force
 
 Write-Log "Step 3: Process Driver (Prepare Phase)"
 
@@ -150,7 +151,22 @@ Post-Comment `
     -Body $prComment `
     -Token $token | Out-Null
 
-# 8. Update Issue Metadata (Pending Review)
+# 8. Send Teams Notification (Pending Review)
+$creatorEmail = $issue.user.email
+if (-not $creatorEmail) { $creatorEmail = $issue.user.login } # Fallback
+
+if ($submissionName -and $projectName) {
+    $ver = Get-ShortVersion -Name $submissionName
+    Send-TeamsNotification `
+        -EventType "DUA_REQUEST_PENDING_REVIEW" `
+        -ToUpn $creatorEmail `
+        -Project $projectName `
+        -Version $ver `
+        -PrUrl $pr.html_url `
+        -Message "PR 已创建，请进行 Review。"
+}
+
+# 9. Update Issue Metadata (Pending Review)
 if ($submissionName) {
     Update-IssueMetadata `
         -IssueNumber $issueNumber `
