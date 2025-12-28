@@ -6,8 +6,8 @@ on:
 
 jobs:
   process-request:
-    # Only process issues with WHQL label (added automatically by template)
-    if: contains(join(gitea.event.issue.labels.*.name, ','), 'WHQL')
+    # Only process issues that match the template title pattern "[Request]: ..."
+    if: startsWith(gitea.event.issue.title, '[Request]:')
     runs-on: RUNNER-WHQL
 
     steps:

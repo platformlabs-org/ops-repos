@@ -11,10 +11,13 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1')
 Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1')
+# Import Config to map General Name -> Formal Name
+Import-Module (Join-Path $PSScriptRoot 'modules/Config.psm1')
 
 try {
     Write-Host "[Submit] Starting SubmitHlkJob.ps1"
 
+    $config = Get-WhqlConfig
     $issue = Get-OpsIssue -Repo $Repository -Number $IssueNumber -Token $AccessToken
 
     $submitterEmail = $issue.user.email
@@ -24,17 +27,25 @@ try {
     Write-Host "[Submit] Submitter Email: $submitterEmail"
 
     $bodyText = $issue.body
+    # This gets the "General Name" (e.g., "Lenovo Dispatcher")
     $driverProject = Get-FormFieldValue -Body $bodyText -Heading "Driver Project"
     if ([string]::IsNullOrWhiteSpace($driverProject)) {
         $driverProject = Get-FormFieldValue -Body $bodyText -Heading "filetype"
     }
     $driverVersion = Get-FormFieldValue -Body $bodyText -Heading "Driver Version"
 
-    Write-Host "[Submit] Driver Project: $driverProject"
+    Write-Host "[Submit] Driver Project (General): $driverProject"
     Write-Host "[Submit] Driver Version: $driverVersion"
 
     if ([string]::IsNullOrWhiteSpace($driverProject)) { throw "Driver Project is required." }
     if ([string]::IsNullOrWhiteSpace($driverVersion)) { throw "Driver Version is required." }
+
+    # Map General Name to Formal Submit Name
+    $formalName = $driverProject
+    if ($config.DriverSubmitMap -and $config.DriverSubmitMap.$driverProject) {
+        $formalName = $config.DriverSubmitMap.$driverProject
+    }
+    Write-Host "[Submit] Driver Project (Formal/Submit): $formalName"
 
     $selectedHlkxName = $null
     $selectedHlkxUrl  = $null
@@ -78,12 +89,13 @@ try {
 
     $hlkxTool = Get-HlkxToolPath
 
-    $driverName = "$driverProject $driverVersion"
+    # Use Formal Name here
+    $driverNameArg = "$formalName $driverVersion"
     $argLine = @(
         "submit"
         "--hlkx",        (Quote-Arg $localHlkxPath)
         "--to",          (Quote-Arg $submitterEmail)
-        "--driver-name", (Quote-Arg $driverName)
+        "--driver-name", (Quote-Arg $driverNameArg)
         "--driver-type", "WHQL"
         "--fw",          (Quote-Arg $driverVersion)
         "--yes"
@@ -120,7 +132,7 @@ try {
         $message = @"
 ✅ **Submission Succeeded**
 
-Driver: $driverProject $driverVersion
+Driver: $formalName $driverVersion
 HLKX: $selectedHlkxName (from $selectedFrom)
 
 $stdout

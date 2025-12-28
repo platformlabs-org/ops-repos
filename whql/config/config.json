@@ -8,6 +8,15 @@
         "Lenovo Tap-to-X Service": "Tap-to-X",
         "Lenovo VirtualDisplay": "VirtualDisplay"
     },
+    "DriverSubmitMap": {
+        "Lenovo Dispatcher": "Dispatcher",
+        "Lenovo SensorFusion": "SensorFusion",
+        "Lenovo DisplayEnhancement": "DisplayEnhancement",
+        "Lenovo Monitor": "Monitor",
+        "Lenovo AIFW Service": "AIFW",
+        "Lenovo Tap-to-X Service": "Tap-to-X",
+        "Lenovo VirtualDisplay": "VirtualDisplay"
+    },
     "ArchitectureMap": {
         "AMD64": "amd64",
         "ARM64": "arm64"
