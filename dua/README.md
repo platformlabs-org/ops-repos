@@ -1,73 +1,123 @@
-# DUA 自动化处理与提交系统
+# DUA 自动化处理与提交系统 (IssueOps)
 
-本项目实现了一套基于 Gitea Actions 和 PowerShell 的全自动化 DUA (Driver Update Acceptable) 处理流程。系统引入了基于 Git 的人工审查机制，将自动化流程分为“准备”与“完成”两个阶段，确保 INF 修改的准确性与可追溯性。
-
----
-
-## 🏗️ 架构概览 (Architecture)
-
-本系统采用模块化设计，核心逻辑封装在 PowerShell 模块中，并通过 Gitea Workflow 进行调度。
-
-### 核心组件
-1.  **Gitea Workflows (`.gitea/workflows/`)**:
-    *   **DUA Prepare**: 监听 Issue 创建/编辑事件。负责下载资源、创建 Git 分支、应用修改并生成 Pull Request。
-    *   **DUA Finish**: 监听 Pull Request 合并事件。负责恢复驱动环境、打包 HLKX、清理分支并通知用户。
-    *   **DUA Submit**: 监听评论 (`/submit`) 事件，负责向微软提交 HLKX 包。
-2.  **PowerShell Step Scripts (`scripts/steps/`)**:
-    *   `1_ParseConfig.ps1`: 解析配置与路由。
-    *   `2_DownloadAssets.ps1`: 下载并缓存驱动资源 (NAS 缓存)。
-    *   `3_ProcessDriver.ps1`: (Prepare 阶段) 创建 Git 分支、提取 INF、修改并提交 PR。
-    *   `3_RestoreDriver.ps1`: (Finish 阶段) 从缓存恢复驱动，并应用 Git 仓库中的 INF 修改。
-    *   `4_UpdateHlkx.ps1` / `5_PackageResults.ps1`: 更新 HLKX 包与结果打包。
-3.  **Core Modules (`scripts/modules/`)**:
-    *   `InfPatch`: 实现复杂的 INF 文件解析与修改逻辑。
-    *   `Gitea`: 封装 Gitea API 操作 (Issue, PR, Comments)。
-    *   `PartnerCenter`: 封装 Partner Center API。
+本项目实现了一套基于 **Gitea Actions** 和 **PowerShell** 的全自动化 DUA (Driver Update Acceptable) 处理流程。系统引入了 **IssueOps** 理念，通过 Issue 驱动流程，结合 Git 的版本控制能力进行人工审查，确保 INF 修改的准确性与可追溯性。
 
 ---
 
-## ⚙️ 工作原理 (Principles)
+## 📚 用户指南 (User Guide)
 
-本流程采用 **Prepare -> Review -> Finish** 的三段式设计：
+本指南面向 **Driver SA** (Service Agents) 及相关开发人员。
 
-### 1. 准备阶段 (Prepare Phase)
-*   **触发**: 用户提交 Issue (包含 Product ID 等元数据)。
-*   **缓存**: 系统根据 Issue ID 检查 NAS 缓存 (`\\nas\labs\RUNNER\tmp\issue-<ID>`)，如果不存在则从 Partner Center 下载 Driver 和 Shell 并缓存。
-*   **Git 分支**:
-    *   创建基准分支 `dua/issue-<ID>/base`：仅提交原始 INF 文件。
-    *   创建补丁分支 `dua/issue-<ID>/patch`：提交修改后的 INF 文件。
-*   **Pull Request**: 自动创建 PR (Patch -> Base)，并指派给 Issue 提交者。
+### 1. 创建 DUA 请求
+1.  进入 Gitea 仓库的 **Issues** 页面。
+2.  点击 **New Issue**，选择 **DUA Request** 模板。
+3.  填写以下信息：
+    *   **Project Name**: 项目代号 (例如 `chogori`)。
+    *   **Product ID**: 微软 Partner Center 中的产品 ID (例如 `1234567890`)。
+4.  点击 **Create Issue** 提交。
 
-### 2. 审查阶段 (Review Phase)
-*   用户收到 PR 通知。
-*   在 Gitea 界面查看 INF 的 Diff (仅展示文本文件的修改，便于审查)。
-*   确认无误后，点击 **Merge Pull Request**。
+> **提示**: 提交后，系统会自动启动 **Prepare** 流程，从 Partner Center 下载驱动，并根据规则自动修改 INF 文件。
 
-### 3. 完成阶段 (Finish Phase)
-*   **触发**: PR 被合并。
-*   **恢复**: 系统从 NAS 缓存中解压原始驱动，并将 Git 仓库中合并后的 INF 文件覆盖回去。
-*   **打包**: 使用 `HlkxTool` 将最终的驱动注入 DUA Shell，生成 `.hlkx` 文件。
-*   **清理**: 自动删除临时的 Git 分支 (`base`, `patch`) 和 NAS 缓存目录。
-*   **通知**: 在 Issue 评论区发布最终产物链接。
+### 2. 审查修改 (Review)
+1.  等待几分钟，Bot 会在 Issue 中留言，并指派一个 **Pull Request (PR)** 给你。
+2.  点击链接进入 PR 页面。
+3.  点击 **Files Changed** 标签页。
+4.  **仔细审查 INF 文件的变更**：
+    *   系统会自动创建一个 `patch` 分支包含修改后的 INF。
+    *   你需要确认这些修改（如 DevID 替换、OS 版本修改等）是否符合预期。
+
+### 3. 完成处理 (Finish)
+1.  确认无误后，点击 PR 页面底部的 **Merge Pull Request** 按钮。
+2.  系统会自动触发 **Finish** 流程：
+    *   将修改后的 INF 注入原始驱动。
+    *   更新 HLKX 包。
+    *   打包最终产物。
+3.  完成后，Bot 会在 Issue 评论区发布 **成功消息**，包含最终 HLKX 包的下载链接 (位于 NAS)。
+
+### 4. 提交至微软 (Submit)
+1.  确认产物无误后，在 Issue 的评论区回复以下指令：
+    ```text
+    /submit
+    ```
+2.  系统将自动把生成的 HLKX 包上传至 Microsoft Partner Center。
+3.  上传成功后，Bot 会回复提交状态。
 
 ---
 
-## 🚀 使用说明 (Usage)
+## 🏗️ 架构与原理 (Architecture & Principles)
 
-### 1. 创建请求
-1.  进入 Gitea 仓库的 **Issues** 页面，创建一个 **WHQL Request**。
-2.  填写 **Project Name**, **Product ID** 等信息并提交。
+本系统采用 **Prepare -> Review -> Finish -> Submit** 的四阶段设计。
 
-### 2. 审查代码
-1.  等待 Workflow (Prepare) 运行完毕。
-2.  你会收到一个被指派的 **Pull Request** 链接。
-3.  点击进入 PR，查看 **Files Changed** 标签页，确认 INF 的修改内容是否符合预期。
-4.  如果满意，点击 **Merge Pull Request**。
+### 流程图解
 
-### 3. 获取产物与提交
-1.  PR 合并后，系统自动触发 Finish 流程。
-2.  完成后，在原 Issue 下方会生成一条评论，包含 `modified.hlkx` 和驱动包的下载链接。
-3.  确认无误后，回复 `/submit` 即可触发自动上传至 Microsoft Partner Center。
+```mermaid
+graph TD
+    User[用户] -->|1. Create Issue| Issue[Gitea Issue]
+    Issue -->|Trigger| Prepare[Workflow: Prepare]
+    Prepare -->|Download & Cache| NAS[NAS Cache]
+    Prepare -->|Create Branch| Git[Git Branch (base/patch)]
+    Prepare -->|Create PR| PR[Pull Request]
+
+    User -->|2. Review & Merge| PR
+    PR -->|Trigger| Finish[Workflow: Finish]
+    Finish -->|Restore Assets| NAS
+    Finish -->|Inject INFs| HlkxTool
+    Finish -->|Generate Package| HLKX[Modified HLKX]
+
+    User -->|3. Comment /submit| Issue
+    Issue -->|Trigger| Submit[Workflow: Submit]
+    Submit -->|Upload| PartnerCenter[Microsoft Partner Center]
+```
+
+### 核心机制
+
+1.  **IssueOps**:
+    *   所有状态流转通过 Issue 和 PR 的状态（Open/Merged/Closed）来驱动。
+    *   Issue 存储元数据 (Product ID)，PR 存储代码变更 (INF Diff)。
+
+2.  **Git 作为审查界面**:
+    *   由于 HLKX 是二进制文件，无法直接审查。
+    *   系统将 INF 文件提取出来，利用 Git 的 Diff 功能让用户审查文本变更。
+    *   `.gitattributes` 配置确保 UTF-16LE 编码的 INF 文件能被正确 Diff。
+
+3.  **缓存机制 (NAS)**:
+    *   驱动包和 HLKX 文件通常较大（数百 MB 到 GB），不适合直接存入 Git。
+    *   **Prepare 阶段**将大文件缓存至 `\\nas\labs\RUNNER\tmp\issue-<ID>`。
+    *   **Finish 阶段**从该路径恢复文件，仅应用 Git 中的 INF 修改。
+
+4.  **路由与策略**:
+    *   `config/mapping/product_routing.json`: 根据产品名决定处理策略 (Pipeline)。
+    *   `config/inf_patch_rules.json`: 定义具体的 INF 修改规则 (正则替换)。
+
+---
+
+## 🚀 部署与配置 (Deployment)
+
+如果你需要在一个新的 Gitea 实例或 Runner 上部署此系统，请遵循以下步骤。
+
+### 1. 环境要求
+*   **Gitea Instance**: 支持 Gitea Actions。
+*   **Runner**: Windows Runner，标签需设置为 `RUNNER-WHQL`。
+*   **Network**: Runner 需要能访问：
+    *   Gitea Server
+    *   Microsoft Partner Center API (互联网)
+    *   内部 NAS (`\\nas\labs`)
+*   **Tools**: Runner 需预装 PowerShell 7+ 和 Git。
+
+### 2. 密钥配置 (Secrets)
+在 Gitea 仓库的 `Settings -> Actions -> Secrets` 中配置以下密钥：
+
+| 密钥名称 | 描述 |
+| :--- | :--- |
+| `BOTTOKEN` | Gitea 机器人的 Access Token，用于操作 Issue/PR/Repo。 |
+| `MS_CLIENT_ID` | Microsoft Partner Center AAD App Client ID。 |
+| `MS_CLIENT_SECRET` | Microsoft Partner Center AAD App Client Secret。 |
+| `MS_TENANT_ID` | Microsoft Partner Center AAD Tenant ID。 |
+| `DUA_TEAMS_WEBHOOK_URL` | (可选) Teams 通知 Webhook URL。 |
+
+### 3. 环境变量
+部分配置通过 `1_ParseConfig.ps1` 中的逻辑硬编码或文件配置，主要包括：
+*   **NAS 路径**: 默认为 `\\nas\labs\RUNNER\tmp`，如需修改请调整 `Common.psm1` 或相关 Step 脚本。
 
 ---
 
@@ -75,38 +125,44 @@
 
 ```text
 dua/
-├── .gitea/workflows/        # Gitea Actions 定义
-│   ├── dua_prepare.yml      # 阶段一：准备与 PR
-│   ├── dua_finish.yml       # 阶段二：打包与清理
-│   └── dua_submit.yml       # 阶段三：提交
-├── config/                  # 配置文件
-│   ├── mapping/             # 路由与定位规则
-│   └── inf_patch_rules.json # INF 修改规则
+├── .gitea/
+│   ├── workflows/           # Gitea Workflow 定义 (YAML)
+│   │   ├── dua_prepare.yml  # 准备阶段：下载、分支、PR
+│   │   ├── dua_finish.yml   # 完成阶段：打包、清理
+│   │   ├── dua_submit.yml   # 提交阶段：上传到微软
+│   │   └── ...
+│   └── ISSUE_TEMPLATE/      # Issue 模板
+├── config/
+│   ├── mapping/             # 产品路由配置
+│   └── inf_patch_rules.json # INF 修改规则库
 ├── scripts/
-│   ├── steps/               # 原子化步骤脚本 (1-6)
-│   ├── modules/             # PowerShell 核心模块
-│   └── tools/               # HlkxTool 等工具
+│   ├── modules/             # PowerShell 公共模块
+│   │   ├── Gitea.psm1       # Gitea API 封装
+│   │   ├── PartnerCenter.psm1 # 微软接口封装
+│   │   ├── InfPatch.psm1    # INF 处理逻辑
+│   │   └── ...
+│   ├── steps/               # 原子化步骤脚本 (被 Workflow 调用)
+│   └── tools/               # 外部工具 (如 HlkxTool.exe)
 └── tests/                   # 单元测试
 ```
 
 ---
 
-## 🔧 配置指南 (Configuration)
+## ❓ 常见问题 (Troubleshooting)
 
-### 修改路由规则
-修改 `config/mapping/product_routing.json`，配置产品名到处理策略的映射。
+### Q: PR 创建失败，Issue 中没有反应？
+*   **检查**: 查看 Gitea Actions 的 `DUA Prepare` 运行日志。
+*   **常见原因**:
+    *   Product ID 错误，导致无法从 Partner Center 下载。
+    *   NAS 路径不可写。
+    *   Token 过期。
 
-### INF 策略配置
-修改 `config/inf_patch_rules.json` 来定义针对特定 Project 的 INF 修改规则 (如 DevID 替换逻辑)。
+### Q: 提交 (/submit) 后提示失败？
+*   **检查**: 查看 `DUA Submit` 日志。
+*   **常见原因**:
+    *   微软接口偶尔超时，可尝试重新评论 `/submit` 重试。
+    *   Submission ID 状态不正确（如已被锁定）。
 
----
-
-## 🛠️ 开发与测试 (Development)
-
-### 运行单元测试
-```powershell
-Invoke-Pester ./tests/unit/InfPatchAdvanced.Tests.ps1
-```
-
-### 缓存机制
-开发时请注意，流程依赖 `\\nas\labs\RUNNER\tmp` 路径进行大文件缓存。在本地调试时，脚本会尝试使用该路径，请确保网络通畅或修改 `2_DownloadAssets.ps1` 中的缓存逻辑。
+### Q: 修改了 INF 但最终包里没生效？
+*   确保你是在 Bot 创建的 `patch` 分支上修改，并且 **Merge** 成功了。
+*   Finish 流程如果报错，可能会导致旧文件未被覆盖。
