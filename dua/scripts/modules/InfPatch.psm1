@@ -94,7 +94,7 @@ function Process-Inf {
     # 4. Append Registry Sections
     if ($regFuncs) {
         $output += ""
-        $output += "; --- Generated Registry Sections ---"
+        $output += "; --- Generated Brightness Registry Sections ---"
 
         foreach ($fName in $regFuncs.PSObject.Properties.Name) {
             $output += "[$fName]"
