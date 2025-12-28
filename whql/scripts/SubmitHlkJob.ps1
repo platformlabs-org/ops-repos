@@ -4,7 +4,13 @@ param(
     [Parameter(Mandatory)]
     [string]$IssueNumber,
     [Parameter(Mandatory)]
-    [string]$AccessToken
+    [string]$AccessToken,
+    [Parameter(Mandatory)]
+    [string]$ClientId,
+    [Parameter(Mandatory)]
+    [string]$ClientSecret,
+    [Parameter(Mandatory)]
+    [string]$TenantId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +19,7 @@ Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1')
 Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1')
 # Import Config to map General Name -> Formal Name
 Import-Module (Join-Path $PSScriptRoot 'modules/Config.psm1')
+Import-Module (Join-Path $PSScriptRoot 'modules/PartnerCenter.psm1')
 
 try {
     Write-Host "[Submit] Starting SubmitHlkJob.ps1"
@@ -89,59 +96,89 @@ try {
 
     $hlkxTool = Get-HlkxToolPath
 
-    # Use Formal Name here
-    $driverNameArg = "$formalName $driverVersion"
-    $argLine = @(
-        "submit"
-        "--hlkx",        (Quote-Arg $localHlkxPath)
-        "--to",          (Quote-Arg $submitterEmail)
-        "--driver-name", (Quote-Arg $driverNameArg)
-        "--driver-type", "WHQL"
-        "--fw",          (Quote-Arg $driverVersion)
-        "--yes"
-        "--non-interactive"
-    ) -join ' '
+    # --- 1. Run HlkxTool parse ---
+    Write-Host "[Submit] Parsing HLKX..."
+    $argLine = "parse " + (Quote-Arg $localHlkxPath)
 
-    Write-Host "[Submit] Running: $hlkxTool $argLine"
+    $p = Start-Process -FilePath $hlkxTool -ArgumentList $argLine -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $tempDir "parse.stdout") -RedirectStandardError (Join-Path $tempDir "parse.stderr")
+    $p.WaitForExit()
 
-    $stdoutFile = Join-Path $tempDir "hlkxtool_stdout.txt"
-    $stderrFile = Join-Path $tempDir "hlkxtool_stderr.txt"
-    if (Test-Path $stdoutFile) { Remove-Item $stdoutFile -Force }
-    if (Test-Path $stderrFile) { Remove-Item $stderrFile -Force }
+    $parseStdout = Get-Content (Join-Path $tempDir "parse.stdout") -Raw
+    $parseStderr = Get-Content (Join-Path $tempDir "parse.stderr") -Raw
 
-    $p = Start-Process -FilePath $hlkxTool `
-                       -ArgumentList $argLine `
-                       -NoNewWindow `
-                       -PassThru `
-                       -RedirectStandardOutput $stdoutFile `
-                       -RedirectStandardError  $stderrFile
-
-    Write-Host "[Submit] HlkxTool started. Waiting..."
-
-    while (-not $p.HasExited) {
-        Start-Sleep -Seconds 10
-        Write-Host "[Submit] ...still running (pid=$($p.Id))"
+    if ($p.ExitCode -ne 0) {
+        throw "HlkxTool parse failed:`nSTDOUT:$parseStdout`nSTDERR:$parseStderr"
     }
 
-    $exitCode = $p.ExitCode
-    $stdout = if (Test-Path $stdoutFile) { Get-Content -Raw $stdoutFile } else { "" }
-    $stderr = if (Test-Path $stderrFile) { Get-Content -Raw $stderrFile } else { "" }
-    $fullOutput = "STDOUT:`n$stdout`nSTDERR:`n$stderr"
+    Write-Host "[Submit] Parse result:`n$parseStdout"
+    $hlkxInfo = $parseStdout | ConvertFrom-Json
 
-    if ($exitCode -eq 0) {
-        $message = @"
+    # --- 2. Authenticate to Partner Center ---
+    Write-Host "[Submit] Authenticating to Partner Center..."
+    $pcToken = Get-PartnerCenterToken -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
+
+    # --- 3. Find or Create Product ---
+    Write-Host "[Submit] Looking for Product: $formalName"
+
+    # We need to find the product ID by name.
+    # Get-Products returns a list. We filter locally.
+    $products = Get-Products -Token $pcToken
+    $targetProduct = $products | Where-Object { $_.name -eq $formalName } | Select-Object -First 1
+
+    if ($targetProduct) {
+        Write-Host "[Submit] Found existing product: $($targetProduct.name) ($($targetProduct.id))"
+        $productId = $targetProduct.id
+    } else {
+        Write-Host "[Submit] Product '$formalName' not found. Creating new product..."
+
+        $newProduct = New-Product `
+            -Name $formalName `
+            -Token $pcToken `
+            -SelectedProductTypes $hlkxInfo.selectedProductTypes `
+            -RequestedSignatures $hlkxInfo.requestedSignatures `
+            -DeviceMetadataCategory $hlkxInfo.deviceMetadataCategory
+
+        $productId = $newProduct.id
+        Write-Host "[Submit] Created new product: $($newProduct.name) ($productId)"
+    }
+
+    # --- 4. Create Submission ---
+    $submissionName = "$formalName $driverVersion"
+    Write-Host "[Submit] Creating Submission: $submissionName"
+
+    $submission = New-Submission -ProductId $productId -Token $pcToken -Name $submissionName -Type "HardwareCertification"
+    $submissionId = $submission.id
+    Write-Host "[Submit] Created Submission ID: $submissionId"
+
+    $fileUploadUrl = $submission.downloads.items[0].url
+    if ([string]::IsNullOrWhiteSpace($fileUploadUrl)) {
+        throw "Submission did not return a valid file upload URL (downloads.items[0].url)."
+    }
+
+    # --- 5. Upload HLKX ---
+    Write-Host "[Submit] Uploading HLKX to SAS URL..."
+    Upload-FileToBlob -SasUrl $fileUploadUrl -FilePath $localHlkxPath
+
+    # --- 6. Commit Submission ---
+    Write-Host "[Submit] Committing Submission..."
+    Commit-Submission -ProductId $productId -SubmissionId $submissionId -Token $pcToken
+
+    Write-Host "[Submit] Submission Committed Successfully."
+
+    # --- 7. Notify Issue ---
+    $message = @"
 ✅ **Submission Succeeded**
 
-Driver: $formalName $driverVersion
-HLKX: $selectedHlkxName (from $selectedFrom)
+**Product:** $formalName (ID: $productId)
+**Submission:** $submissionName (ID: $submissionId)
+**HLKX:** $selectedHlkxName
+**Status:** Committed (Processing started)
 
-$stdout
+[View in Partner Center](https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$productId/submissions/$submissionId)
 "@
-        Write-Host "[Submit] HlkxTool completed successfully."
-        New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
-    } else {
-        throw "HlkxTool submit failed with exit code {0}.{1}{2}" -f $exitCode, [Environment]::NewLine, $fullOutput
-    }
+
+    New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $message | Out-Null
+
 }
 catch {
     $errorMsg = $_.Exception.Message
