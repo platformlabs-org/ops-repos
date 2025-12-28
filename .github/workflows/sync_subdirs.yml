@@ -57,7 +57,11 @@ jobs:
           git config user.email "i@terry.ee"
           git config user.name "tianyi"
 
-          # Copy contents from the source directory, overwriting existing files
+          # Remove all files and directories except .git
+          echo "Removing all existing files..."
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # Copy contents from the source directory
           echo "Copying files from $DIR"
           cp -r "${GITHUB_WORKSPACE}/$DIR"/. .
 
