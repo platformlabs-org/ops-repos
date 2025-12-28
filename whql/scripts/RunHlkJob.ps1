@@ -11,7 +11,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1')
 
 Write-Host "[Run] Starting RunHlkJob.ps1"
 Write-Host "[Run] Mode          : $Mode"

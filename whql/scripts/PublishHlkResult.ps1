@@ -11,8 +11,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1')
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1')
 
 if (-not (Test-Path $FilePath)) {
     throw "[Publish] File not found: $FilePath"

@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'Config.psm1') -Force
+# Import Config if not already present
+if (-not (Get-Command Get-WhqlConfig -ErrorAction SilentlyContinue)) {
+    Import-Module (Join-Path $PSScriptRoot 'Config.psm1')
+}
 
 # -------- Private Helpers --------
 
