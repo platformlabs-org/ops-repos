@@ -162,8 +162,8 @@ function Patch-Inf-Advanced {
 
     $newContent = Process-Inf -InfContent $content -Config $targetConfig -InfType $infType
 
-    # Save as UTF-16 LE (standard for INF)
-    $newContent | Out-File -FilePath $InfPath -Encoding Unicode -Force
+    # Save as UTF-8 (for Git storage)
+    $newContent | Out-File -FilePath $InfPath -Encoding utf8 -Force
     Write-Host "INF Patched successfully."
 }
 

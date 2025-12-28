@@ -52,14 +52,26 @@ foreach ($file in $modInfs) {
         $relPath = $fullPath.Substring($basePath.Length)
         $destPath = Join-Path $restoreDir $relPath
 
+        # Function to copy with UTF-16 conversion for INFs
+        $Action = {
+            param($Src, $Dest)
+            if ($Src -match "\.inf$") {
+                # Convert from UTF-8 (Repo) to UTF-16LE (Driver Package)
+                $c = Get-Content -LiteralPath $Src -Raw
+                $c | Out-File -FilePath $Dest -Encoding Unicode -Force
+            } else {
+                Copy-Item -LiteralPath $Src -Destination $Dest -Force
+            }
+        }
+
         if (Test-Path $destPath) {
             Write-Log "Overwriting $relPath"
-            Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+            & $Action -Src $file.FullName -Dest $destPath
         } else {
             Write-Warning "Modified file $relPath does not exist in original structure. Copying anyway."
             $destParent = Split-Path -Parent $destPath
             if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Force -Path $destParent | Out-Null }
-            Copy-Item -LiteralPath $file.FullName -Destination $destPath -Force
+            & $Action -Src $file.FullName -Dest $destPath
         }
     } else {
         Write-Warning "Path mismatch: '$fullPath' not under '$basePath'"
