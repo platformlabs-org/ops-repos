@@ -12,5 +12,6 @@
         "AMD64": "amd64",
         "ARM64": "arm64"
     },
-    "BaseUrl": "https://ops.platformlabs.lenovo.com/api/v1/repos"
+    "BaseUrl": "https://ops.platformlabs.lenovo.com/api/v1/repos",
+    "SignRequestOption": "HLKX Sign Request"
 }
