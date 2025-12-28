@@ -285,6 +285,7 @@ function New-Product {
     param(
         [Parameter(Mandatory)] $Name,
         [Parameter(Mandatory)] $Token,
+        $TestHarness,
         $SelectedProductTypes,
         $RequestedSignatures,
         $DeviceMetadataCategory,
@@ -301,6 +302,7 @@ function New-Product {
 
     $bodyObj = @{
         productName = $Name
+        testHarness = "hlk"
         deviceType = $DeviceType
         isTestSign = $IsTestSign
         isFlightSign = $IsFlightSign
