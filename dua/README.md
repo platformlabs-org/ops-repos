@@ -50,6 +50,8 @@
 
 ### 流程图解
 
+#### 1) Prepare 阶段（Issue -> PR）
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -59,25 +61,45 @@ sequenceDiagram
     participant NAS as NAS Cache
     participant Git as Git (base/patch branches)
     participant PR as Pull Request
-    participant Finish as Workflow: Finish
-    participant HlkxTool as HlkxTool
-    participant HLKX as Modified HLKX
-    participant Submit as Workflow: Submit
-    participant PC as Microsoft Partner Center
 
-    User->>Issue: 1) Create Issue
+    User->>Issue: Create Issue
     Issue->>Prepare: Trigger
     Prepare->>NAS: Download & Cache
     Prepare->>Git: Create base/patch branches
     Prepare->>PR: Create PR
+    Note over User,PR: Review happens on the PR UI
+```
 
-    User->>PR: 2) Review & Merge
+#### 2) Finish 阶段（PR merged -> 产物生成）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant PR as Pull Request
+    participant Finish as Workflow: Finish
+    participant NAS as NAS Cache
+    participant HlkxTool as HlkxTool
+    participant HLKX as Modified HLKX
+
+    User->>PR: Review & Merge
     PR->>Finish: Trigger (on merged)
     Finish->>NAS: Restore Assets
     Finish->>HlkxTool: Inject INFs
     HlkxTool->>HLKX: Generate package
+```
 
-    User->>Issue: 3) Comment "/submit"
+#### 3) Submit 阶段（Issue comment /submit -> 上传 Partner Center）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant Issue as Gitea Issue
+    participant Submit as Workflow: Submit
+    participant PC as Microsoft Partner Center
+
+    User->>Issue: Comment "/submit"
     Issue->>Submit: Trigger
     Submit->>PC: Upload
 ```
