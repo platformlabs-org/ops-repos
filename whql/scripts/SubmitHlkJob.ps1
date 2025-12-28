@@ -117,33 +117,22 @@ try {
     Write-Host "[Submit] Authenticating to Partner Center..."
     $pcToken = Get-PartnerCenterToken -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
 
-    # --- 3. Find or Create Product ---
-    Write-Host "[Submit] Looking for Product: $formalName"
+    # --- 3. Create Product ---
+    $fullName = "$formalName $driverVersion"
+    Write-Host "[Submit] Creating Product: $fullName"
 
-    # We need to find the product ID by name.
-    # Get-Products returns a list. We filter locally.
-    $products = Get-Products -Token $pcToken
-    $targetProduct = $products | Where-Object { $_.name -eq $formalName } | Select-Object -First 1
+    $newProduct = New-Product `
+        -Name $fullName `
+        -Token $pcToken `
+        -SelectedProductTypes $hlkxInfo.selectedProductTypes `
+        -RequestedSignatures $hlkxInfo.requestedSignatures `
+        -DeviceMetadataCategory $hlkxInfo.deviceMetadataCategory
 
-    if ($targetProduct) {
-        Write-Host "[Submit] Found existing product: $($targetProduct.name) ($($targetProduct.id))"
-        $productId = $targetProduct.id
-    } else {
-        Write-Host "[Submit] Product '$formalName' not found. Creating new product..."
-
-        $newProduct = New-Product `
-            -Name $formalName `
-            -Token $pcToken `
-            -SelectedProductTypes $hlkxInfo.selectedProductTypes `
-            -RequestedSignatures $hlkxInfo.requestedSignatures `
-            -DeviceMetadataCategory $hlkxInfo.deviceMetadataCategory
-
-        $productId = $newProduct.id
-        Write-Host "[Submit] Created new product: $($newProduct.name) ($productId)"
-    }
+    $productId = $newProduct.id
+    Write-Host "[Submit] Created new product: $($newProduct.name) ($productId)"
 
     # --- 4. Create Submission ---
-    $submissionName = "$formalName $driverVersion"
+    $submissionName = $fullName
     Write-Host "[Submit] Creating Submission: $submissionName"
 
     $submission = New-Submission -ProductId $productId -Token $pcToken -Name $submissionName -Type "HardwareCertification"
@@ -169,7 +158,7 @@ try {
     $message = @"
 ✅ **Submission Succeeded**
 
-**Product:** $formalName (ID: $productId)
+**Product:** $fullName (ID: $productId)
 **Submission:** $submissionName (ID: $submissionId)
 **HLKX:** $selectedHlkxName
 **Status:** Committed (Processing started)
