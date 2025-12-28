@@ -43,6 +43,35 @@ function Get-ProductSubmissions {
     return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
 }
 
+function Get-Product {
+    param(
+        [Parameter(Mandatory)] $ProductId,
+        [Parameter(Mandatory)] $Token
+    )
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products/$ProductId"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+    }
+    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+}
+
+function New-Product {
+    param(
+        [Parameter(Mandatory)] $Name,
+        [Parameter(Mandatory)] $Token
+    )
+    $uri = "https://manage.devcenter.microsoft.com/v2.0/my/hardware/products"
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+        "Content-Type"  = "application/json"
+    }
+    $body = @{
+        name = $Name
+    } | ConvertTo-Json
+
+    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
+}
+
 function Get-FileNameFromUrl {
     param(
         [Parameter(Mandatory)]
@@ -191,4 +220,4 @@ function Get-SubmissionStatus {
     return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
 }
 
-Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-ProductSubmissions, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus
+Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-ProductSubmissions, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus, Get-Product, New-Product
