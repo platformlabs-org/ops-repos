@@ -10,8 +10,8 @@ body:
 
         **Instructions:**
         1. Select the **Driver Project**.
-           - For **WHQL Build**: Select your specific project (e.g., Lenovo Dispatcher). You **MUST** upload a `.zip` driver package.
-           - For **Signing**: Select `HLKX Sign Request`. You **MUST** upload an `.hlkx` file.
+           - For **WHQL Build**: Select your specific project (e.g., dispatcher). You **MUST** upload a `.zip` driver package.
+           - For **Signing**: Select `hlkx_sign_request`. You **MUST** upload an `.hlkx` file.
         2. Select the **Architecture**.
         3. Enter the **Driver Version**.
         4. **After creating the issue**, upload the required attachment (.zip or .hlkx).
@@ -22,14 +22,14 @@ body:
       label: Driver Project
       multiple: false
       options:
-        - Lenovo Dispatcher
-        - Lenovo SensorFusion
-        - Lenovo DisplayEnhancement
-        - Lenovo Monitor
-        - Lenovo AIFW Service
-        - Lenovo Tap-to-X Service
-        - Lenovo VirtualDisplay
-        - HLKX Sign Request
+        - dispatcher
+        - sensorfusion
+        - displayenhancement
+        - monitor
+        - aifw
+        - tap-to-x
+        - virtualdisplay
+        - hlkx_sign_request
     validations:
       required: true
 

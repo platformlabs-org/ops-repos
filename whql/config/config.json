@@ -1,26 +1,26 @@
 {
     "DriverProjectMap": {
-        "Lenovo Dispatcher": "Dispatcher3.1.x",
-        "Lenovo SensorFusion": "SensorFusion2.0.0.x",
-        "Lenovo DisplayEnhancement": "DisplayEnhancement0.1.0.x",
-        "Lenovo Monitor": "HDRDisplay",
-        "Lenovo AIFW Service": "AIFW",
-        "Lenovo Tap-to-X Service": "Tap-to-X",
-        "Lenovo VirtualDisplay": "VirtualDisplay"
+        "dispatcher": "Dispatcher3.1.x",
+        "sensorfusion": "SensorFusion2.0.0.x",
+        "displayenhancement": "DisplayEnhancement0.1.0.x",
+        "monitor": "HDRDisplay",
+        "aifw": "AIFW",
+        "tap-to-x": "Tap-to-X",
+        "virtualdisplay": "VirtualDisplay"
     },
     "DriverSubmitMap": {
-        "Lenovo Dispatcher": "dispatcher",
-        "Lenovo SensorFusion": "sensorfusion",
-        "Lenovo DisplayEnhancement": "displayenhancement",
-        "Lenovo Monitor": "monitor",
-        "Lenovo AIFW Service": "aifw",
-        "Lenovo Tap-to-X Service": "tap-to-x",
-        "Lenovo VirtualDisplay": "virtualDisplay"
+        "dispatcher": "Lenovo Dispatcher",
+        "sensorfusion": "Lenovo SensorFusion",
+        "displayenhancement": "Lenovo DisplayEnhancement",
+        "monitor": "Lenovo Monitor",
+        "aifw": "Lenovo AIFW Service",
+        "tap-to-x": "Lenovo Tap-to-X Service",
+        "virtualdisplay": "Lenovo VirtualDisplay"
     },
     "ArchitectureMap": {
         "AMD64": "amd64",
         "ARM64": "arm64"
     },
     "BaseUrl": "https://ops.platformlabs.lenovo.com/api/v1/repos",
-    "SignRequestOption": "HLKX Sign Request"
+    "SignRequestOption": "hlkx_sign_request"
 }
