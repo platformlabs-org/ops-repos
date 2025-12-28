@@ -1,0 +1,16 @@
+{
+    "DriverProjectMap": {
+        "Lenovo Dispatcher": "Dispatcher3.1.x",
+        "Lenovo SensorFusion": "SensorFusion2.0.0.x",
+        "Lenovo DisplayEnhancement": "DisplayEnhancement0.1.0.x",
+        "Lenovo Monitor": "HDRDisplay",
+        "Lenovo AIFW Service": "AIFW",
+        "Lenovo Tap-to-X Service": "Tap-to-X",
+        "Lenovo VirtualDisplay": "VirtualDisplay"
+    },
+    "ArchitectureMap": {
+        "AMD64": "amd64",
+        "ARM64": "arm64"
+    },
+    "BaseUrl": "https://ops.platformlabs.lenovo.com/api/v1/repos"
+}
