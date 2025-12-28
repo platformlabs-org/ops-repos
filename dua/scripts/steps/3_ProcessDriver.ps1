@@ -68,13 +68,13 @@ Write-Log "Copied target INF: $relPath"
 # Normalize INFs to UTF-16LE (BOM) to ensure Gitea diffs work correctly with .gitattributes
 $workDirInfs = Get-ChildItem -Path $workDir -Recurse -Filter "*.inf"
 foreach ($wdInf in $workDirInfs) {
-    # Read with detection (default) and write back as UTF-16LE (Unicode)
+    # Read with detection (default) and write back as UTF-8
     $content = Get-Content -LiteralPath $wdInf.FullName -Raw
-    $content | Out-File -FilePath $wdInf.FullName -Encoding Unicode -Force
+    $content | Out-File -FilePath $wdInf.FullName -Encoding utf8 -Force
 }
 
 # (Optional) Create .gitattributes to ensure INFs are treated as text in PR
-Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text working-tree-encoding=UTF-16"
+Set-Content -Path (Join-Path $workDir ".gitattributes") -Value "*.inf text"
 
 # 3. Git Operations
 Write-Log "Initializing Git operations..."
