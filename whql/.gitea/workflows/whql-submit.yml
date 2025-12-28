@@ -21,4 +21,7 @@ jobs:
           ./scripts/SubmitHlkJob.ps1 `
             -Repository '${{ gitea.repository }}' `
             -IssueNumber '${{ gitea.event.issue.number }}' `
-            -AccessToken '${{ secrets.BOTTOKEN }}'
+            -AccessToken '${{ secrets.BOTTOKEN }}' `
+            -ClientId '${{ secrets.MS_CLIENT_ID }}' `
+            -ClientSecret '${{ secrets.MS_CLIENT_SECRET }}' `
+            -TenantId '${{ secrets.MS_TENANT_ID }}'
