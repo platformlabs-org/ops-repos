@@ -118,10 +118,11 @@ try {
     $pcToken = Get-PartnerCenterToken -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
 
     # --- 3. Create Product ---
-    Write-Host "[Submit] Creating Product: $formalName"
+    $fullName = "$formalName $driverVersion"
+    Write-Host "[Submit] Creating Product: $fullName"
 
     $newProduct = New-Product `
-        -Name $formalName `
+        -Name $fullName `
         -Token $pcToken `
         -SelectedProductTypes $hlkxInfo.selectedProductTypes `
         -RequestedSignatures $hlkxInfo.requestedSignatures `
@@ -131,7 +132,7 @@ try {
     Write-Host "[Submit] Created new product: $($newProduct.name) ($productId)"
 
     # --- 4. Create Submission ---
-    $submissionName = "$formalName $driverVersion"
+    $submissionName = $fullName
     Write-Host "[Submit] Creating Submission: $submissionName"
 
     $submission = New-Submission -ProductId $productId -Token $pcToken -Name $submissionName -Type "HardwareCertification"
@@ -157,7 +158,7 @@ try {
     $message = @"
 ✅ **Submission Succeeded**
 
-**Product:** $formalName (ID: $productId)
+**Product:** $fullName (ID: $productId)
 **Submission:** $submissionName (ID: $submissionId)
 **HLKX:** $selectedHlkxName
 **Status:** Committed (Processing started)
