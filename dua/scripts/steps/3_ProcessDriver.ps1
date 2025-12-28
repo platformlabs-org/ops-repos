@@ -35,25 +35,35 @@ $tempExtract = Join-Path $env:GITHUB_WORKSPACE "temp_extract_all"
 New-Item -ItemType Directory -Force -Path $tempExtract | Out-Null
 Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 
-# Move INFs to workDir
-$infs = Get-ChildItem -Path $tempExtract -Recurse -Filter "*.inf"
-foreach ($inf in $infs) {
-    $basePath = $tempExtract
-    if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
-        $basePath += [System.IO.Path]::DirectorySeparatorChar
-    }
+# Load inf_locator.json to get target INF pattern
+$locatorConfigPath = Join-Path $RepoRoot "config\mapping\inf_locator.json"
+$locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-Json
+$infPattern = $locatorConfig.locators.$infStrategy.filename_pattern
+if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$infStrategy'" }
 
-    $fullPath = $inf.FullName
-    if ($fullPath.StartsWith($basePath)) {
-        $relPath  = $fullPath.Substring($basePath.Length)
-        $destPath = Join-Path $workDir $relPath
-        $destDir  = Split-Path -Parent $destPath
-        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
-        Copy-Item -LiteralPath $inf.FullName -Destination $destPath -Force
-    } else {
-        Write-Warning "Path mismatch: '$fullPath' not under '$basePath'"
-    }
+# Find the target INF matching the pattern
+$targetInf = Get-ChildItem -Path $tempExtract -Recurse -File -Filter $infPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $targetInf) {
+    $targetInf = Get-ChildItem -Path $tempExtract -Recurse -File | Where-Object { $_.Name -match $infPattern } | Select-Object -First 1
 }
+
+if (-not $targetInf) {
+    throw "Target INF matching '$infPattern' not found in extracted files from $driverZip"
+}
+
+# Copy only the target INF to workDir, preserving relative path structure
+$basePath = $tempExtract
+if (-not $basePath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+    $basePath += [System.IO.Path]::DirectorySeparatorChar
+}
+
+$fullPath = $targetInf.FullName
+$relPath  = $fullPath.Substring($basePath.Length)
+$destPath = Join-Path $workDir $relPath
+$destDir  = Split-Path -Parent $destPath
+if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
+Copy-Item -LiteralPath $targetInf.FullName -Destination $destPath -Force
+Write-Log "Copied target INF: $relPath"
 
 # Normalize INFs to UTF-16LE (BOM) to ensure Gitea diffs work correctly with .gitattributes
 $workDirInfs = Get-ChildItem -Path $workDir -Recurse -Filter "*.inf"
@@ -88,15 +98,8 @@ Write-Log "Creating Patch Branch: $branchPatch"
 git checkout -b $branchPatch
 
 # 4. Patch INFs
-$locatorConfigPath = Join-Path $RepoRoot "config\mapping\inf_locator.json"
-$locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-Json
-$infPattern = $locatorConfig.locators.$infStrategy.filename_pattern
-if (-not $infPattern) { throw "inf_locator.json missing filename_pattern for '$infStrategy'" }
-
-$infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter $infPattern -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $infFile) {
-    $infFile = Get-ChildItem -Path $workDir -Recurse -File | Where-Object { $_.Name -match $infPattern } | Select-Object -First 1
-}
+# The target INF has already been found and copied to workDir in step 2
+$infFile = Get-ChildItem -Path $workDir -Recurse -File -Filter "*.inf" | Select-Object -First 1
 
 if ($infFile) {
     Write-Log "Patching INF: $($infFile.FullName)"
@@ -107,7 +110,7 @@ if ($infFile) {
         Write-Warning "Rules not found. Skipping Patch-Inf-Advanced."
     }
 } else {
-    Write-Warning "Target INF matching '$infPattern' not found in extracted INFs. Skipping patch."
+    throw "Target INF not found in $workDir"
 }
 
 # 5. Commit and Push Patch
@@ -142,7 +145,7 @@ Write-Log "PR Created: $($pr.html_url)"
 # 7. Post Comment on PR
 Write-Log "Posting instruction comment on PR..."
 $prComment = @"
-请在顶部"文件变动"选项卡的diff视图检查此次修改是否正确，如果正确请点击"创建合并提交"，如果不正确，请关闭合并请求并联系liuty24
+请在顶部**"文件变动"**选项卡的diff视图检查此次修改是否正确，如果正确请点击**"创建合并提交"**，如果不正确，请关闭合并请求并联系liuty24
 "@
 Post-Comment `
     -Owner $repoOwner `
