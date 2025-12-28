@@ -51,22 +51,35 @@
 ### 流程图解
 
 ```mermaid
-graph TD
-    User[用户] -->|1. Create Issue| Issue[Gitea Issue]
-    Issue -->|Trigger| Prepare[Workflow: Prepare]
-    Prepare -->|Download & Cache| NAS[NAS Cache]
-    Prepare -->|Create Branch| Git[Git Branch (base/patch)]
-    Prepare -->|Create PR| PR[Pull Request]
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant Issue as Gitea Issue
+    participant Prepare as Workflow: Prepare
+    participant NAS as NAS Cache
+    participant Git as Git (base/patch branches)
+    participant PR as Pull Request
+    participant Finish as Workflow: Finish
+    participant HlkxTool as HlkxTool
+    participant HLKX as Modified HLKX
+    participant Submit as Workflow: Submit
+    participant PC as Microsoft Partner Center
 
-    User -->|2. Review & Merge| PR
-    PR -->|Trigger| Finish[Workflow: Finish]
-    Finish -->|Restore Assets| NAS
-    Finish -->|Inject INFs| HlkxTool
-    Finish -->|Generate Package| HLKX[Modified HLKX]
+    User->>Issue: 1) Create Issue
+    Issue->>Prepare: Trigger
+    Prepare->>NAS: Download & Cache
+    Prepare->>Git: Create base/patch branches
+    Prepare->>PR: Create PR
 
-    User -->|3. Comment /submit| Issue
-    Issue -->|Trigger| Submit[Workflow: Submit]
-    Submit -->|Upload| PartnerCenter[Microsoft Partner Center]
+    User->>PR: 2) Review & Merge
+    PR->>Finish: Trigger (on merged)
+    Finish->>NAS: Restore Assets
+    Finish->>HlkxTool: Inject INFs
+    HlkxTool->>HLKX: Generate package
+
+    User->>Issue: 3) Comment "/submit"
+    Issue->>Submit: Trigger
+    Submit->>PC: Upload
 ```
 
 ### 核心机制
