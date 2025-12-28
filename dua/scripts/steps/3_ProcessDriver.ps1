@@ -145,7 +145,7 @@ Write-Log "PR Created: $($pr.html_url)"
 # 7. Post Comment on PR
 Write-Log "Posting instruction comment on PR..."
 $prComment = @"
-请在顶部**"文件变动"**选项卡的diff视图检查此次修改是否正确，如果正确请点击**"创建合并提交"**，如果不正确，请关闭合并请求并联系liuty24
+请在顶部 **文件变动** 选项卡的diff视图检查此次修改是否正确，如果正确请点击 **创建合并提交** ，如果不正确，请关闭合并请求并联系liuty24
 "@
 Post-Comment `
     -Owner $repoOwner `
