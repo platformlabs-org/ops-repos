@@ -93,27 +93,17 @@ try {
     $newSubmissionName = ""
 
     if ($isExtTask) {
-        Write-Log "Extension task detected. Creating separate Product and Submission."
+        Write-Log "Extension task detected. Skipping automatic submission due to API limitations."
 
-        # 1. Get Original Product Name
-        $originalProduct = Get-Product -ProductId $productId -Token $pcToken
-        $originalProductName = $originalProduct.name
+        $dashboardUrl = "https://partner.microsoft.com/en-us/dashboard/hardware/driver/$productId"
+        $msg = "⚠️ **无法自动提交**`n`n由于 API 限制，Extension 类型的驱动无法通过脚本自动创建新产品。`n请访问以下链接手动创建产品并提交：`n`n[前往 Partner Center]($dashboardUrl)"
 
-        # 2. Construct New Name
-        $newBaseName = "${originalProductName} - ${projectName}"
-        $newSubmissionName = $newBaseName
-        Write-Log "New Product/Submission Name: $newBaseName"
+        Post-Comment `
+            -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
+            -Body $msg `
+            -Token $token | Out-Null
 
-        # 3. Create New Product
-        $newProduct = New-Product -Name $newBaseName -Token $pcToken
-        $newProductId = $newProduct.id
-        Write-Log "Created New Product: $newProductId"
-
-        # 4. Create Initial Submission
-        $submission = New-Submission -ProductId $newProductId -Name $newSubmissionName -Token $pcToken -Type "initial"
-
-        # Switch context to new Product
-        $productId = $newProductId
+        return
     } else {
         # Standard Derived Submission
         $newSubmissionName = "${originalSubmissionName}_${projectName}"
