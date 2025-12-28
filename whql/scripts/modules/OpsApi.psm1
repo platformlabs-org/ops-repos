@@ -210,7 +210,7 @@ function Add-OpsIssueLabels {
 
     $body = @{ labels = $Labels } | ConvertTo-Json
 
-    Write-Host "[OpsApi] POST add labels to issue #$Number: $($Labels -join ', ')"
+    Write-Host "[OpsApi] POST add labels to issue #${Number}: $($Labels -join ', ')"
 
     Invoke-WithRetry -Action {
         Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body -ContentType "application/json"
