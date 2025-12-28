@@ -214,16 +214,10 @@ function Get-PartnerCenterToken {
         $TenantId,
         $Scope = "https://manage.devcenter.microsoft.com/.default"
     )
-    $body = @{
-        client_id = $ClientId
-        scope = $Scope
-        client_secret = $ClientSecret
-        grant_type = "client_credentials"
-        resource = "https://manage.devcenter.microsoft.com"
-    } | ConvertTo-Json
-    $uri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
+    $body = "grant_type=client_credentials&client_id=$ClientId&client_secret=$ClientSecret&resource=https://manage.devcenter.microsoft.com"
+    $uri = "https://login.microsoftonline.com/$TenantId/oauth2/token"
 
-    $response = Invoke-RestMethodWithRetry -Uri $uri -Method Post -Body $body
+    $response = Invoke-RestMethodWithRetry -Uri $uri -Method Post -Body $body -ContentType "application/x-www-form-urlencoded"
     return $response.access_token
 }
 
