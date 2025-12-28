@@ -14,9 +14,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Import Modules
-Import-Module (Join-Path $PSScriptRoot 'modules/Config.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'modules/Config.psm1')
+Import-Module (Join-Path $PSScriptRoot 'modules/OpsApi.psm1')
+Import-Module (Join-Path $PSScriptRoot 'modules/WhqlCommon.psm1')
 
 function Get-DriverFolderFromArchive {
     param([string]$ArchivePath)
