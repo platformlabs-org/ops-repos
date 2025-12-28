@@ -57,14 +57,7 @@ if ($pipelineConfig.actions -contains "PackageArtifacts") {
 
 # 2. Rename/Copy HLKX
 if ($outputHlkxPath -and (Test-Path $outputHlkxPath)) {
-    # Target 1: dua-shell.hlkx
-    $duaShellName = "${targetProject}-${version}-${productId}-dua-shell.hlkx"
-    $duaShellPath = Join-Path $workspace $duaShellName
-    Copy-Item -LiteralPath $outputHlkxPath -Destination $duaShellPath -Force
-    Write-Log "Created DuaShell: $duaShellPath"
-    $finalArtifacts += $duaShellPath
-
-    # Target 2: replaced.hlkx
+    # Target: replaced.hlkx
     $replacedShellName = "${targetProject}-${version}-${productId}-replaced.hlkx"
     $replacedShellPath = Join-Path $workspace $replacedShellName
     Move-Item -LiteralPath $outputHlkxPath -Destination $replacedShellPath -Force
