@@ -289,7 +289,7 @@ function New-Product {
         $RequestedSignatures,
         $DeviceMetadataCategory,
         $MarketingNames,
-        $DeviceType = "external",
+        $DeviceType = "internal",
         $IsTestSign = $false,
         $IsFlightSign = $false
     )
