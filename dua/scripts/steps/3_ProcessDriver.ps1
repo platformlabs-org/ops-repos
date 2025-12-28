@@ -8,12 +8,14 @@ $RepoRoot    = Resolve-Path (Join-Path $ScriptRoot "..\..") | Select-Object -Exp
 Import-Module (Join-Path $ModulesPath "Common.psm1")   -Force
 Import-Module (Join-Path $ModulesPath "InfPatch.psm1") -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")    -Force
+Import-Module (Join-Path $ModulesPath "Metadata.psm1") -Force
 
 Write-Log "Step 3: Process Driver (Prepare Phase)"
 
 $driverZip    = $env:DRIVER_ZIP_PATH
 $infStrategy  = $env:INF_STRATEGY
 $projectName  = $env:PROJECT_NAME
+$submissionName = $env:SUBMISSION_NAME
 $issueNumber  = $env:ISSUE_NUMBER
 $repoOwner    = $env:REPO_OWNER
 $repoName     = $env:REPO_NAME
@@ -135,3 +137,18 @@ $pr = New-PullRequest `
 
 Write-Log "PR Created: $($pr.html_url)"
 "PR_URL=$($pr.html_url)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+# 7. Update Issue Metadata (Pending Review)
+if ($submissionName) {
+    Update-IssueMetadata `
+        -IssueNumber $issueNumber `
+        -RepoOwner $repoOwner `
+        -RepoName $repoName `
+        -Token $token `
+        -ProjectName $projectName `
+        -SubmissionName $submissionName `
+        -Status "Pending Review" `
+        -InfStrategy $infStrategy
+} else {
+    Write-Warning "Submission Name missing. Skipping metadata update."
+}

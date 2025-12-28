@@ -197,6 +197,60 @@ function Upload-CommentAttachment {
 
 }
 
+function Set-IssueTitle {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [int]$IssueNumber,
+        [string]$Title,
+        [string]$Token
+    )
+
+    $api = Get-GiteaApiBase
+    # PATCH /repos/{owner}/{repo}/issues/{index}
+    $uri = "$api/repos/$Owner/$Repo/issues/$IssueNumber"
+    Write-Host "[Gitea] PATCH $uri (Title Update)"
+
+    $headers = New-GiteaHeaders -Token $Token
+    $headers["Content-Type"] = "application/json"
+
+    $payload = @{ title = $Title } | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Patch -Headers $headers -Body $payload
+    } catch {
+        throw "Set-IssueTitle failed. URI=$uri :: $($_.Exception.Message)"
+    }
+}
+
+function Add-IssueLabels {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [int]$IssueNumber,
+        [string[]]$Labels,
+        [string]$Token
+    )
+
+    if (-not $Labels -or $Labels.Count -eq 0) { return }
+
+    $api = Get-GiteaApiBase
+    # POST /repos/{owner}/{repo}/issues/{index}/labels
+    $uri = "$api/repos/$Owner/$Repo/issues/$IssueNumber/labels"
+    Write-Host "[Gitea] POST $uri (Add Labels)"
+
+    $headers = New-GiteaHeaders -Token $Token
+    $headers["Content-Type"] = "application/json"
+
+    $payload = @{ labels = $Labels } | ConvertTo-Json
+
+    try {
+        return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $payload
+    } catch {
+        throw "Add-IssueLabels failed. URI=$uri :: $($_.Exception.Message)"
+    }
+}
+
 # ✅ 一步：先建comment，再把文件作为该comment附件上传
 function Post-CommentWithAttachments {
     param(
@@ -279,4 +333,4 @@ function New-PullRequest {
 Export-ModuleMember -Function `
     Get-Issue, Post-Comment, Get-Comments, `
     Upload-IssueAttachment, Upload-CommentAttachment, Post-CommentWithAttachments, `
-    New-PullRequest
+    New-PullRequest, Set-IssueTitle, Add-IssueLabels

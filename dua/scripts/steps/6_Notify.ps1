@@ -10,12 +10,15 @@ $ModulesPath = Join-Path $ScriptRoot "..\modules"
 
 Import-Module (Join-Path $ModulesPath "Common.psm1") -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")  -Force
+Import-Module (Join-Path $ModulesPath "Metadata.psm1") -Force
 
 Write-Log "Step 6: Notify User"
 
 $outputHlkx      = $env:OUTPUT_HLKX_PATH
 $outputDriverZip = $env:OUTPUT_DRIVER_ZIP_PATH
 $infStrategy     = $env:INF_STRATEGY
+$projectName     = $env:PROJECT_NAME
+$submissionName  = $env:SUBMISSION_NAME
 
 $files = @()
 if ($outputDriverZip -and (Test-Path $outputDriverZip)) { $files += $outputDriverZip }
@@ -38,4 +41,19 @@ if ($files.Count -gt 0) {
       -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
       -Body "⚠️ Processing complete for $infStrategy, but no artifacts were generated." `
       -Token $token | Out-Null
+}
+
+# Update Issue Metadata (Complete)
+if ($submissionName -and $projectName) {
+    Update-IssueMetadata `
+        -IssueNumber $IssueNumber `
+        -RepoOwner $RepoOwner `
+        -RepoName $RepoName `
+        -Token $token `
+        -ProjectName $projectName `
+        -SubmissionName $submissionName `
+        -Status "Complete" `
+        -InfStrategy $infStrategy
+} else {
+    Write-Warning "Missing SubmissionName or ProjectName. Skipping metadata update."
 }

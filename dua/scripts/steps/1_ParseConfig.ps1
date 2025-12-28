@@ -106,6 +106,7 @@ if ([string]::IsNullOrWhiteSpace($infStrategy)) { throw "Strategy selection fail
 "PROJECT_NAME=$projectName" | Out-File -FilePath $env:GITHUB_ENV -Append
 "PRODUCT_ID=$productId" | Out-File -FilePath $env:GITHUB_ENV -Append
 "SUBMISSION_ID=$submissionId" | Out-File -FilePath $env:GITHUB_ENV -Append
+"SUBMISSION_NAME=$submissionName" | Out-File -FilePath $env:GITHUB_ENV -Append
 "INF_STRATEGY=$infStrategy" | Out-File -FilePath $env:GITHUB_ENV -Append
 "ISSUE_NUMBER=$IssueNumber" | Out-File -FilePath $env:GITHUB_ENV -Append
 "REPO_OWNER=$RepoOwner" | Out-File -FilePath $env:GITHUB_ENV -Append

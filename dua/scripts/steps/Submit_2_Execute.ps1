@@ -13,6 +13,7 @@ Import-Module (Join-Path $ModulesPath "Common.psm1")        -Force
 Import-Module (Join-Path $ModulesPath "Gitea.psm1")         -Force
 Import-Module (Join-Path $ModulesPath "PartnerCenter.psm1") -Force
 Import-Module (Join-Path $ModulesPath "DriverPipeline.psm1") -Force
+Import-Module (Join-Path $ModulesPath "Metadata.psm1")       -Force
 
 Write-Log "Step 2: Execute Submission"
 
@@ -155,6 +156,19 @@ try {
         -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
         -Body $msg `
         -Token $token | Out-Null
+
+    # Update Issue Metadata (submitted)
+    if ($originalSubmissionName -ne "Unknown") {
+         Update-IssueMetadata `
+            -IssueNumber $IssueNumber `
+            -RepoOwner $RepoOwner `
+            -RepoName $RepoName `
+            -Token $token `
+            -ProjectName $projectName `
+            -SubmissionName $originalSubmissionName `
+            -Status "submitted" `
+            -InfStrategy $infStrategy
+    }
 
 } catch {
     Write-Error "Submission process failed: $_"
