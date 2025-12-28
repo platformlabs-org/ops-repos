@@ -138,7 +138,17 @@ $pr = New-PullRequest `
 Write-Log "PR Created: $($pr.html_url)"
 "PR_URL=$($pr.html_url)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-# 7. Update Issue Metadata (Pending Review)
+# 7. Post Comment on PR
+Write-Log "Posting instruction comment on PR..."
+$prComment = "请检查此次修改是否正确，如果正确请确认合并，如果不正确，请联系tianyi"
+Post-Comment `
+    -Owner $repoOwner `
+    -Repo $repoName `
+    -IssueNumber $pr.number `
+    -Body $prComment `
+    -Token $token | Out-Null
+
+# 8. Update Issue Metadata (Pending Review)
 if ($submissionName) {
     Update-IssueMetadata `
         -IssueNumber $issueNumber `

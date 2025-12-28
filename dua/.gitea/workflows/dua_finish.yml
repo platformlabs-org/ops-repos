@@ -76,6 +76,10 @@ jobs:
               throw "Could not extract issue number from base ref: $env:GITHUB_BASE_REF"
           }
 
+      - name: Close Issue
+        shell: pwsh
+        run: ./scripts/steps/CloseIssue.ps1 -IssueNumber $env:ISSUE_NUMBER -RepoOwner ${{ github.repository_owner }} -RepoName ${{ github.event.repository.name }}
+
       - name: Cleanup
         shell: pwsh
         run: ./scripts/steps/Cleanup.ps1 -IssueNumber $env:ISSUE_NUMBER -BaseBranch ${{ github.event.pull_request.base.ref }} -PatchBranch ${{ github.event.pull_request.head.ref }}
