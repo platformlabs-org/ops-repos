@@ -58,9 +58,9 @@ $architecture  = Get-FormFieldValue -Body $bodyText -Heading "Architecture"
 $driverVersion = Get-FormFieldValue -Body $bodyText -Heading "Driver Version"
 
 Write-Host "[Prepare] Parsed issue fields:"
-Write-Host "  Driver Project : $driverProject"
-Write-Host "  Architecture   : $architecture"
-Write-Host "  Driver Version : $driverVersion"
+Write-Host "  Driver Project : ${driverProject}"
+Write-Host "  Architecture   : ${architecture}"
+Write-Host "  Driver Version : ${driverVersion}"
 
 # 2. Determine Mode
 $mode = "WHQL"
