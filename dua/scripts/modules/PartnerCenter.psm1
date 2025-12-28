@@ -1,4 +1,212 @@
 
+function Invoke-RestMethodWithRetry {
+    param(
+        [string]$Uri,
+        [string]$Method = "GET",
+        [hashtable]$Headers = @{},
+        [string]$Body = $null,
+        [string]$ContentType = "application/json",
+        [int]$MaxRetries = 3,
+        [int]$RetryDelaySeconds = 2
+    )
+
+    $currentRetry = 0
+    while ($true) {
+        try {
+            $params = @{
+                Uri         = $Uri
+                Method      = $Method
+                Headers     = $Headers
+                ContentType = $ContentType
+                ErrorAction = "Stop"
+            }
+            if ($Body) { $params.Body = $Body }
+
+            return Invoke-RestMethod @params
+        }
+        catch {
+            $currentRetry++
+            if ($currentRetry -ge $MaxRetries) {
+                Write-Host "ERROR: Request to $Uri failed after $MaxRetries retries. Error: $_"
+                throw $_
+            }
+            Write-Host "WARN: Request failed ($currentRetry/$MaxRetries). Retrying in $RetryDelaySeconds seconds... Error: $($_.Exception.Message)"
+            Start-Sleep -Seconds $RetryDelaySeconds
+            $RetryDelaySeconds *= 2 # Exponential backoff
+        }
+    }
+}
+
+function Invoke-TransferWithRetry {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url,
+        [Parameter(Mandatory)]
+        [string]$LocalFilePath,
+        [string]$Method = "GET", # GET = Download, PUT = Upload
+        [hashtable]$Headers = @{},
+        [int]$TimeoutMinutes = 30
+    )
+
+    $stopWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $lastProgressTime = [DateTime]::MinValue
+
+    # Loop until timeout
+    while ($stopWatch.Elapsed.TotalMinutes -lt $TimeoutMinutes) {
+        try {
+            if ($Method -eq "GET") {
+                # --- Download Logic (HttpClient) ---
+                $client = New-Object System.Net.Http.HttpClient
+                $client.Timeout = [TimeSpan]::FromMinutes($TimeoutMinutes)
+
+                foreach ($key in $Headers.Keys) {
+                    $client.DefaultRequestHeaders.Add($key, $Headers[$key])
+                }
+
+                # Start request, only read headers first
+                $responseTask = $client.GetAsync($Url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead)
+                try {
+                    $responseTask.Wait()
+                } catch {
+                    throw "Connection failed: $_"
+                }
+                $response = $responseTask.Result
+
+                if (-not $response.IsSuccessStatusCode) {
+                    throw "Http Status $($response.StatusCode)"
+                }
+
+                $totalBytes = $response.Content.Headers.ContentLength
+                if ($null -eq $totalBytes) { $totalBytes = -1 }
+
+                $remoteStream = $response.Content.ReadAsStreamAsync().Result
+                $localStream  = [System.IO.File]::Create($LocalFilePath)
+
+                $buffer = New-Object byte[] 81920 # 80KB buffer
+                $totalRead = 0
+                $startTime = [DateTime]::Now
+
+                # Read Loop
+                while (($read = $remoteStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $localStream.Write($buffer, 0, $read)
+                    $totalRead += $read
+
+                    # Progress Report every 5 seconds
+                    $now = [DateTime]::Now
+                    if (($now - $lastProgressTime).TotalSeconds -ge 5) {
+                        $elapsed = ($now - $startTime).TotalSeconds
+                        if ($elapsed -gt 0) {
+                            $speed = $totalRead / $elapsed
+                            $speedMB = "{0:N2} MB/s" -f ($speed / 1MB)
+
+                            if ($totalBytes -gt 0) {
+                                $percent = "{0:P1}" -f ($totalRead / $totalBytes)
+                                $remainingBytes = $totalBytes - $totalRead
+                                $etaSeconds = if ($speed -gt 0) { $remainingBytes / $speed } else { 0 }
+                                $eta = [TimeSpan]::FromSeconds($etaSeconds).ToString("hh\:mm\:ss")
+                                Write-Host "Downloading... $percent ($speedMB) ETA: $eta"
+                            } else {
+                                Write-Host "Downloading... {0:N2} MB ($speedMB)" -f ($totalRead / 1MB)
+                            }
+                        }
+                        $lastProgressTime = $now
+                    }
+                }
+
+                # Cleanup
+                $localStream.Close()
+                $remoteStream.Close()
+                $client.Dispose()
+
+                Write-Host "Download complete: $LocalFilePath"
+                return # Success, exit loop
+            }
+            elseif ($Method -eq "PUT") {
+                # --- Upload Logic (HttpWebRequest) ---
+                # HttpWebRequest is used here to easily access the RequestStream for progress reporting
+
+                $request = [System.Net.HttpWebRequest]::Create($Url)
+                $request.Method = "PUT"
+                $request.Timeout = $TimeoutMinutes * 60 * 1000
+                $request.ReadWriteTimeout = 300 * 1000
+                # KeepAlive is true by default, which is good
+
+                foreach ($key in $Headers.Keys) {
+                    $request.Headers.Add($key, $Headers[$key])
+                }
+
+                $fileInfo = Get-Item $LocalFilePath
+                $totalBytes = $fileInfo.Length
+                $request.ContentLength = $totalBytes
+
+                # Open file and request stream
+                $fileStream = [System.IO.File]::OpenRead($LocalFilePath)
+                try {
+                    $requestStream = $request.GetRequestStream()
+                } catch {
+                    $fileStream.Close()
+                    throw "Failed to open request stream: $_"
+                }
+
+                $buffer = New-Object byte[] 81920
+                $totalWritten = 0
+                $startTime = [DateTime]::Now
+
+                # Write Loop
+                while (($read = $fileStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $requestStream.Write($buffer, 0, $read)
+                    $totalWritten += $read
+
+                    # Progress Report every 5 seconds
+                    $now = [DateTime]::Now
+                    if (($now - $lastProgressTime).TotalSeconds -ge 5) {
+                        $elapsed = ($now - $startTime).TotalSeconds
+                        if ($elapsed -gt 0) {
+                            $speed = $totalWritten / $elapsed
+                            $speedMB = "{0:N2} MB/s" -f ($speed / 1MB)
+                            $percent = "{0:P1}" -f ($totalWritten / $totalBytes)
+
+                            $remainingBytes = $totalBytes - $totalWritten
+                            $etaSeconds = if ($speed -gt 0) { $remainingBytes / $speed } else { 0 }
+                            $eta = [TimeSpan]::FromSeconds($etaSeconds).ToString("hh\:mm\:ss")
+
+                            Write-Host "Uploading... $percent ($speedMB) ETA: $eta"
+                        }
+                        $lastProgressTime = $now
+                    }
+                }
+
+                $fileStream.Close()
+                $requestStream.Close()
+
+                # Get Response to ensure completion
+                try {
+                    $response = $request.GetResponse()
+                    $response.Close()
+                } catch {
+                     throw "Upload finished sending but server returned error: $_"
+                }
+
+                Write-Host "Upload complete: $LocalFilePath"
+                return # Success
+            }
+        }
+        catch {
+            Write-Host "Transfer failed. Retrying... Error: $_"
+            # Basic cleanup if variables exist
+            if ($null -ne $localStream) { $localStream.Close(); $localStream = $null }
+            if ($null -ne $remoteStream) { $remoteStream.Close(); $remoteStream = $null }
+            if ($null -ne $client) { $client.Dispose(); $client = $null }
+            if ($null -ne $fileStream) { $fileStream.Close(); $fileStream = $null }
+            if ($null -ne $requestStream) { $requestStream.Close(); $requestStream = $null }
+
+            Start-Sleep -Seconds 5
+        }
+    }
+
+    throw "Transfer operation ($Method $Url) failed after $TimeoutMinutes minutes."
+}
+
 function Get-PartnerCenterToken {
     param(
         $ClientId,
@@ -14,7 +222,8 @@ function Get-PartnerCenterToken {
         resource = "https://manage.devcenter.microsoft.com"
     }
     $uri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
-    $response = Invoke-RestMethod -Uri $uri -Method Post -Body $body
+
+    $response = Invoke-RestMethodWithRetry -Uri $uri -Method Post -Body $body
     return $response.access_token
 }
 
@@ -28,7 +237,7 @@ function Get-DriverMetadata {
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
-    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Get -Headers $headers
 }
 
 function Get-ProductSubmissions {
@@ -40,7 +249,7 @@ function Get-ProductSubmissions {
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
-    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Get -Headers $headers
 }
 
 function Get-Product {
@@ -52,7 +261,7 @@ function Get-Product {
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
-    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Get -Headers $headers
 }
 
 function New-Product {
@@ -69,7 +278,7 @@ function New-Product {
         name = $Name
     } | ConvertTo-Json
 
-    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Post -Headers $headers -Body $body
 }
 
 function Get-FileNameFromUrl {
@@ -133,10 +342,10 @@ function Get-SubmissionPackage {
     $shellPath  = Join-Path $DownloadPath $shellName
 
     Write-Host "Downloading Driver => $driverPath"
-    Invoke-WebRequest -Uri $driverAsset.url -OutFile $driverPath
+    Invoke-TransferWithRetry -Url $driverAsset.url -LocalFilePath $driverPath -Method "GET"
 
     Write-Host "Downloading DuaShell => $shellPath"
-    Invoke-WebRequest -Uri $shellAsset.url -OutFile $shellPath
+    Invoke-TransferWithRetry -Url $shellAsset.url -LocalFilePath $shellPath -Method "GET"
 
     return @{ Driver = $driverPath; DuaShell = $shellPath }
 }
@@ -167,7 +376,7 @@ function New-Submission {
 
     $body = $bodyObj | ConvertTo-Json
 
-    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Post -Headers $headers -Body $body
 }
 
 function Upload-FileToBlob {
@@ -175,21 +384,12 @@ function Upload-FileToBlob {
         $SasUrl,
         $FilePath
     )
-    # Simple BlockBlob PUT
     $headers = @{
         "x-ms-blob-type" = "BlockBlob"
     }
 
     Write-Host "Uploading $FilePath to Blob Storage..."
-    try {
-        # Using WebRequest for better stream handling
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers.Add("x-ms-blob-type", "BlockBlob")
-        $wc.UploadFile($SasUrl, "PUT", $FilePath)
-    }
-    catch {
-        Throw "Failed to upload file to blob: $_"
-    }
+    Invoke-TransferWithRetry -Url $SasUrl -LocalFilePath $FilePath -Method "PUT" -Headers $headers
 }
 
 function Commit-Submission {
@@ -204,7 +404,7 @@ function Commit-Submission {
         "Authorization" = "Bearer $Token"
         "Content-Type"  = "application/json"
     }
-    return Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body "{}"
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Post -Headers $headers -Body "{}"
 }
 
 function Get-SubmissionStatus {
@@ -217,7 +417,7 @@ function Get-SubmissionStatus {
     $headers = @{
         "Authorization" = "Bearer $Token"
     }
-    return Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+    return Invoke-RestMethodWithRetry -Uri $uri -Method Get -Headers $headers
 }
 
 Export-ModuleMember -Function Get-PartnerCenterToken, Get-DriverMetadata, Get-ProductSubmissions, Get-SubmissionPackage, New-Submission, Upload-FileToBlob, Commit-Submission, Get-SubmissionStatus, Get-Product, New-Product
