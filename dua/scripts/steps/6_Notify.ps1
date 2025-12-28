@@ -15,15 +15,31 @@ Import-Module (Join-Path $ModulesPath "Teams.psm1")    -Force
 
 Write-Log "Step 6: Notify User"
 
-$outputHlkx      = $env:OUTPUT_HLKX_PATH
-$outputDriverZip = $env:OUTPUT_DRIVER_ZIP_PATH
+$outputArtifacts = $env:OUTPUT_ARTIFACTS
 $infStrategy     = $env:INF_STRATEGY
 $projectName     = $env:PROJECT_NAME
 $submissionName  = $env:SUBMISSION_NAME
 
 $files = @()
-if ($outputDriverZip -and (Test-Path $outputDriverZip)) { $files += $outputDriverZip }
-if ($outputHlkx -and (Test-Path $outputHlkx))          { $files += $outputHlkx }
+
+# Load artifacts from the new variable
+if ($outputArtifacts) {
+    $artifactList = $outputArtifacts -split ";"
+    foreach ($path in $artifactList) {
+        if (Test-Path $path) {
+            $files += $path
+        }
+    }
+}
+
+# Fallback/Legacy: Check old variables if OUTPUT_ARTIFACTS was empty or didn't catch everything
+# (Though step 5 moves them, so these original paths likely don't exist anymore, but good for safety)
+if ($env:OUTPUT_DRIVER_ZIP_PATH -and (Test-Path $env:OUTPUT_DRIVER_ZIP_PATH)) {
+    if ($files -notcontains $env:OUTPUT_DRIVER_ZIP_PATH) { $files += $env:OUTPUT_DRIVER_ZIP_PATH }
+}
+if ($env:OUTPUT_HLKX_PATH -and (Test-Path $env:OUTPUT_HLKX_PATH)) {
+    if ($files -notcontains $env:OUTPUT_HLKX_PATH) { $files += $env:OUTPUT_HLKX_PATH }
+}
 
 $token = $env:GITHUB_TOKEN
 if (-not $token) { $token = $env:GITEA_TOKEN }
