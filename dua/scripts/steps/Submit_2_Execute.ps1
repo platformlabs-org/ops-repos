@@ -103,6 +103,11 @@ try {
             -Body $msg `
             -Token $token | Out-Null
 
+        Set-IssueState `
+            -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
+            -State "closed" `
+            -Token $token | Out-Null
+
         return
     } else {
         # Standard Derived Submission
@@ -183,6 +188,11 @@ try {
             -Status "submitted" `
             -InfStrategy $infStrategy
     }
+
+    Set-IssueState `
+        -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
+        -State "closed" `
+        -Token $token | Out-Null
 
 } catch {
     Write-Error "Submission process failed: $_"
