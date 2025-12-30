@@ -57,21 +57,36 @@ function Process-Inf {
         # 2. Replace Hardware ID (SUBSYS)
         if ($line -match "PCI\\VEN_8086&DEV_") {
             $matched = $false
-            foreach ($dId in $devIds) {
-                # If dId is empty/null, match all. Else match specific DEV_ID
-                if ([string]::IsNullOrEmpty($dId) -or $line -match "DEV_$dId") {
-                    foreach ($sId in $subsysIds) {
-                        if ($line -match "SUBSYS_[a-zA-Z0-9]+") {
-                            $newLine = $line -replace "SUBSYS_[a-zA-Z0-9]+", "SUBSYS_$sId"
-                        } else {
-                            $newLine = $line.TrimEnd() + "&SUBSYS_$sId"
-                        }
-                        $output += $newLine
+            
+            # If devIds is empty, match all DEV_IDs
+            if ($devIds.Count -eq 0) {
+                foreach ($sId in $subsysIds) {
+                    if ($line -match "SUBSYS_[a-zA-Z0-9]+") {
+                        $newLine = $line -replace "SUBSYS_[a-zA-Z0-9]+", "SUBSYS_$sId"
+                    } else {
+                        $newLine = $line.TrimEnd() + "&SUBSYS_$sId"
                     }
-                    $matched = $true
-                    break
+                    $output += $newLine
+                }
+                $matched = $true
+            } else {
+                # Otherwise, match specific dev_ids
+                foreach ($dId in $devIds) {
+                    if ($line -match "DEV_$dId") {
+                        foreach ($sId in $subsysIds) {
+                            if ($line -match "SUBSYS_[a-zA-Z0-9]+") {
+                                $newLine = $line -replace "SUBSYS_[a-zA-Z0-9]+", "SUBSYS_$sId"
+                            } else {
+                                $newLine = $line.TrimEnd() + "&SUBSYS_$sId"
+                            }
+                            $output += $newLine
+                        }
+                        $matched = $true
+                        break
+                    }
                 }
             }
+            
             if ($matched) { continue }
         }
 
