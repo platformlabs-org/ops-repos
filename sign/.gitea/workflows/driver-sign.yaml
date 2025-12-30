@@ -6,6 +6,7 @@ on:
 
 env:
   ISSUE_ID: ${{ gitea.event.issue.number }}
+  GITEA_REPO: ${{ gitea.repository }}
   WORK_DIR: ./unzipped
   OUTPUT_DIR: ./output
 
