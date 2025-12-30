@@ -20,6 +20,8 @@ jobs:
             repo: ops.platformlabs.lenovo.com/platform-drivers/sign
           - dir: bsod
             repo: ops.platformlabs.lenovo.com/operations/bsod
+          - dir: windows-update
+            repo: ops.platformlabs.lenovo.com/platform-drivers/windows-update
     steps:
       - uses: actions/checkout@v3
 
