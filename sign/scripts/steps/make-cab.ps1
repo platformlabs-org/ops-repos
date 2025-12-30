@@ -1,6 +1,8 @@
 # make-cab.ps1
 # 所有生成文件都放在 OUTPUT_DIR，CAB文件名来自 ATTACHMENT_NAME
 
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
+
 $timestampServer = "http://timestamp.digicert.com"
 
 # ==== 环境变量 ====

@@ -1,5 +1,5 @@
 # update-issue.ps1
-. "$PSScriptRoot/APIHelper.ps1"
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
 
 # ====== 基础参数读取 ======
 $repo      = $env:GITEA_REPO

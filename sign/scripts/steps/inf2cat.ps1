@@ -1,6 +1,8 @@
 # inf2cat.ps1
 # 环境变量：ARCH_TYPE, INF_DIR
 
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
+
 $inf2catPath = "\\nas\labs\KITS\WDK\x86\inf2cat.exe"
 
 $architecture = $env:ARCH_TYPE

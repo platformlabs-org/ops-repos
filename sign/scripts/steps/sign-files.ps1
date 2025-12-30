@@ -2,6 +2,8 @@
 # 环境变量: SIGN_TYPE, WORKDIR, INF_DIR
 # 使用 Set-AuthenticodeSignature + 当前用户第一个带私钥的证书
 
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
+
 # ===== 1. 跳过的文件名列表（小写，不区分大小写）=====
 $SkipFiles = @(
     "Diskinfo.dll", "DiskOperator.dll"
@@ -24,7 +26,10 @@ if (-not $signType) { throw "SIGN_TYPE env not set!" }
 
 if ($signType -eq "Sign File") {
     $targetDir = $env:WORK_DIR
-    if (-not $targetDir) { throw "WORKDIR env not set!" }
+    if (-not $targetDir) {
+        $targetDir = "$PSScriptRoot/../../unzipped"
+        Write-Warning "WORKDIR env not set, defaulting to $targetDir"
+    }
     Write-Host "Sign Type: Sign File"
 }
 elseif ($signType -eq "Lenovo Driver") {

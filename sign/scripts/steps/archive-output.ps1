@@ -1,6 +1,8 @@
 # archive-output.ps1
 # 打包签名后的driver目录，归档至OUTPUT_DIR，文件名自动带时间戳
 
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
+
 $outputDir = $env:OUTPUT_DIR
 $infDir    = $env:INF_DIR
 $workDir   = $env:WORK_DIR
@@ -11,7 +13,12 @@ if (-not $attachmentName) { throw "ATTACHMENT_NAME env not set!" }
 
 # 1. 优先INF_DIR，否则WORK_DIR
 $sourceDir = $infDir
-if ([string]::IsNullOrWhiteSpace($sourceDir)) { $sourceDir = $workDir }
+if ([string]::IsNullOrWhiteSpace($sourceDir)) {
+    $sourceDir = $workDir
+    if (-not $sourceDir) {
+        $sourceDir = "$PSScriptRoot/../../unzipped"
+    }
+}
 if (-not $sourceDir -or -not (Test-Path $sourceDir)) {
     throw "No valid source dir to archive! Neither INF_DIR nor WORK_DIR is set or exist."
 }

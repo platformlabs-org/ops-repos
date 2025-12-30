@@ -1,7 +1,7 @@
 # precheck.ps1
-# 依赖 APIHelper.ps1
+# 依赖 OpsApi.psm1
 
-. "$PSScriptRoot/APIHelper.ps1"
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
 
 function Remove-SpecialChars {
     param([string]$Str)
