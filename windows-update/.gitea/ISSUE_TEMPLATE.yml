@@ -1,0 +1,36 @@
+name: Windows Update Shipping Label Request
+about: Create a new shipping label for a submission via Windows Update
+title: "[Shipping Label Request]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to request a new Shipping Label for Windows Update.
+  - type: input
+    id: product_id
+    attributes:
+      label: Product ID
+      placeholder: "1234567890"
+    validations:
+      required: true
+  - type: input
+    id: submission_id
+    attributes:
+      label: Submission ID
+      placeholder: "1152921504621467600"
+    validations:
+      required: true
+  - type: textarea
+    id: request_body
+    attributes:
+      label: Request Body (JSON)
+      description: Paste the full JSON payload for the shipping label.
+      placeholder: |
+        {
+          "publishingSpecifications": { ... },
+          "targeting": { ... },
+          "name": "Label Name",
+          "destination": "windowsUpdate"
+        }
+    validations:
+      required: true
