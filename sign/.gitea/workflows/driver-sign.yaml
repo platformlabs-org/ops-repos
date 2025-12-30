@@ -18,31 +18,31 @@ jobs:
 
       - name: Check attachment format
         run: |
-          pwsh ./scripts/pre-check.ps1
+          pwsh ./scripts/steps/pre-check.ps1
 
       - name: Download and extract attachment
         run: |
-          pwsh ./scripts/download-and-extract.ps1
+          pwsh ./scripts/steps/download-and-extract.ps1
 
       - name: Signature
         if: ${{ env.SIGN_TYPE == 'Lenovo Driver' || env.SIGN_TYPE == 'Sign file' }}
         run: |
-          pwsh ./scripts/sign-files.ps1
+          pwsh ./scripts/steps/sign-files.ps1
 
       - name: Generate CAT file
         if: ${{ env.SIGN_TYPE == 'Lenovo Driver' || env.SIGN_TYPE == 'Other Driver' }}
         run: |
-          pwsh ./scripts/inf2cat.ps1
+          pwsh ./scripts/steps/inf2cat.ps1
 
       - name: Generate CAB package
         if: ${{ env.NEED_CAB == 'Yes' && env.SIGN_TYPE != 'Sign file' }}
         run: |
-          pwsh ./scripts/make-cab.ps1
+          pwsh ./scripts/steps/make-cab.ps1
 
       - name: Archive output
         run: |
-          pwsh ./scripts/archive-output.ps1
+          pwsh ./scripts/steps/archive-output.ps1
 
       - name: Issue update
         run: |
-          pwsh ./scripts/update-issue.ps1
+          pwsh ./scripts/steps/update-issue.ps1

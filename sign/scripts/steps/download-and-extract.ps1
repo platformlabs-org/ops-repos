@@ -1,7 +1,7 @@
 # download_and_extract.ps1
-# 依赖 APIHelper.ps1
+# 依赖 OpsApi.psm1
 
-. "$PSScriptRoot/APIHelper.ps1"
+Import-Module "$PSScriptRoot/../modules/OpsApi.psm1" -Force
 
 function Remove-SpecialChars {
     param([string]$Str)
@@ -14,7 +14,7 @@ if (-not $issueId) { throw "ISSUE_ID env not set!" }
 $repo = $env:GITEA_REPO
 if (-not $repo) { $repo = "PE/SIGN" }
 $workDir = $env:WORK_DIR
-if (-not $workDir) { $workDir = "$PSScriptRoot/../unzipped" }
+if (-not $workDir) { $workDir = "$PSScriptRoot/../../unzipped" }
 if (!(Test-Path $workDir)) { New-Item -ItemType Directory -Path $workDir | Out-Null }
 
 # === 2. 获取附件信息 ===
@@ -85,8 +85,8 @@ if ($signType -eq "Sign File") {
 
     # === 6. whosinf 检查（仅Lenovo Driver）===
     if ($signType -eq "Lenovo Driver") {
-        $whosinfExe = Resolve-Path "$PSScriptRoot/../tools/whosinf.exe" -ErrorAction SilentlyContinue
-        if (-not $whosinfExe) { throw "whosinf.exe not found in ../tools/." }
+        $whosinfExe = Resolve-Path "$PSScriptRoot/../../tools/whosinf.exe" -ErrorAction SilentlyContinue
+        if (-not $whosinfExe) { throw "whosinf.exe not found in ../../tools/." }
         $whoResult = & $whosinfExe $infPath 2>&1
         Write-Host "whosinf output: $whoResult"
         if ($whoResult.Trim().ToLower() -ne "lenovo") {
