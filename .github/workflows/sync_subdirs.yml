@@ -32,7 +32,8 @@ jobs:
           TARGET_REPO: ${{ matrix.repo }}
           DIR: ${{ matrix.dir }}
         run: |
-          # Check if directory exists
+          set -euo pipefail
+
           if [ ! -d "$DIR" ]; then
             echo "Directory $DIR does not exist. Skipping."
             exit 0
@@ -40,45 +41,33 @@ jobs:
 
           echo "Syncing $DIR to $TARGET_REPO"
 
-          # Create a temporary directory for the work
           WORK_DIR=$(mktemp -d)
-
-          # Construct the remote URL with credentials
           REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
 
-          # Clone the remote repository
           echo "Pulling from $TARGET_REPO"
           git clone "$REMOTE_URL" "$WORK_DIR"
-
-          # Switch to the repository directory
           cd "$WORK_DIR"
 
-          # Configure git user if not already configured
           git config user.email "i@terry.ee"
           git config user.name "tianyi"
 
-          # Remove all files and directories except .git
+          git checkout main 2>/dev/null || git checkout -b main
+
           echo "Removing all existing files..."
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-          # Copy contents from the source directory
           echo "Copying files from $DIR"
           cp -r "${GITHUB_WORKSPACE}/$DIR"/. .
 
-          # Check if there are any changes
-          if git diff --quiet && git diff --cached --quiet; then
+          git add -A
+
+          if git diff --cached --quiet; then
             echo "No changes detected. Skipping commit and push."
             exit 0
           fi
 
           echo "Changes detected. Committing and pushing..."
-
-          # Add all files
-          git add .
-
-          # Create a commit
           git commit -m "Sync from remote repository"
 
-          # Push to the remote repository
           echo "Pushing to $TARGET_REPO"
-          git push "$REMOTE_URL" main:main
+          git push "$REMOTE_URL" HEAD:main
