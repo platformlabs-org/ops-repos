@@ -74,12 +74,19 @@ function Get-LatestHlkxFromIssueAssets {
     return ($hlkxAssets | Sort-Object { if ($_.created_at) { [DateTime]$_.created_at } else { [DateTime]::MinValue } } -Descending | Select-Object -First 1)
 }
 
-function Get-LatestSubmitCommandTime {
+function Get-LatestSubmitCommand {
     param([object[]]$Comments)
     if (-not $Comments -or $Comments.Count -eq 0) { return $null }
     $submitComments = $Comments | Where-Object { $_.body -match '^\s*/submit(\s|$)' }
     if (-not $submitComments -or $submitComments.Count -eq 0) { return $null }
-    return ($submitComments | Sort-Object { [DateTime]$_.created_at } -Descending | Select-Object -First 1).created_at
+    return ($submitComments | Sort-Object { [DateTime]$_.created_at } -Descending | Select-Object -First 1)
+}
+
+function Get-LatestSubmitCommandTime {
+    param([object[]]$Comments)
+    $cmd = Get-LatestSubmitCommand -Comments $Comments
+    if ($cmd) { return $cmd.created_at }
+    return $null
 }
 
 function Get-LatestHlkxFromBotComments {
@@ -131,5 +138,6 @@ Export-ModuleMember -Function `
     Quote-Arg, `
     Get-HlkxToolPath, `
     Get-LatestHlkxFromIssueAssets, `
+    Get-LatestSubmitCommand, `
     Get-LatestSubmitCommandTime, `
     Get-LatestHlkxFromBotComments
