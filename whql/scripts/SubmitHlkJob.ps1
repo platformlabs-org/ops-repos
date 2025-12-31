@@ -52,6 +52,31 @@ try {
     if ($config.DriverSubmitMap -and $config.DriverSubmitMap.$driverProject) {
         $formalName = $config.DriverSubmitMap.$driverProject
     }
+
+    # --- SIGN Request Override Logic ---
+    $comments = $null
+    $signRequestOption = $config.SignRequestOption
+    if ([string]::IsNullOrWhiteSpace($signRequestOption)) { $signRequestOption = "hlkx_sign_request" }
+
+    if ($driverProject -eq $signRequestOption) {
+        Write-Host "[Submit] Detected SIGN Request Mode ($driverProject). Checking comments for override name..."
+        $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
+
+        $latestCmd = Get-LatestSubmitCommand -Comments $comments
+        if ($latestCmd) {
+            # Extract text after /submit
+            $cmdBody = $latestCmd.body.Trim()
+            $overrideName = ($cmdBody -replace '^\s*/submit\s*', '').Trim()
+
+            if (-not [string]::IsNullOrWhiteSpace($overrideName)) {
+                $formalName = $overrideName
+                Write-Host "[Submit] Override Formal Name from comment: '$formalName'"
+            } else {
+                Write-Host "[Submit] No override name found in comment. Using default: '$formalName'"
+            }
+        }
+    }
+
     Write-Host "[Submit] Driver Project (Formal/Submit): $formalName"
 
     $selectedHlkxName = $null
@@ -65,7 +90,9 @@ try {
         $selectedFrom     = "issue.assets"
         Write-Host "[Submit] HLKX selected from issue.assets: $selectedHlkxName"
     } else {
-        $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
+        if ($null -eq $comments) {
+            $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
+        }
         $submitAtRaw = Get-LatestSubmitCommandTime -Comments $comments
         $cutoff = $null
         if ($submitAtRaw) {
@@ -98,7 +125,7 @@ try {
 
     # --- 1. Run HlkxTool parse ---
     Write-Host "[Submit] Parsing HLKX..."
-    $argLine = "parse " + (Quote-Arg $localHlkxPath)
+    $argLine = "parse --hlkx " + (Quote-Arg $localHlkxPath)
 
     $p = Start-Process -FilePath $hlkxTool -ArgumentList $argLine -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $tempDir "parse.stdout") -RedirectStandardError (Join-Path $tempDir "parse.stderr")
     $p.WaitForExit()
