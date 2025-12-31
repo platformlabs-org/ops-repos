@@ -56,7 +56,7 @@ switch ($Mode.ToUpperInvariant()) {
         $outputFileName = "$safeName.hlkx"
         $outputFullPath = Join-Path $outDir $outputFileName
 
-        $hlkxToolArgs = @('WHQL', $TemplateFolder, $DriverFolder, $outputFullPath)
+        $hlkxToolArgs = @('WHQL', '--package', $TemplateFolder, '--driver', $DriverFolder, '--out', $outputFullPath)
     }
     'SIGN' {
         if (-not (Test-Path $InputHlkxFile)) { throw "[Run] InputHlkxFile does not exist: $InputHlkxFile" }
@@ -67,7 +67,7 @@ switch ($Mode.ToUpperInvariant()) {
         $outputFileName = "${safeBaseName}_Signed.hlkx"
         $outputFullPath = Join-Path $outDir $outputFileName
 
-        $hlkxToolArgs = @('SIGN', $InputHlkxFile, '', $outputFullPath)
+        $hlkxToolArgs = @('SIGN', '--package', $InputHlkxFile, '--out', $outputFullPath)
     }
     default {
         throw "[Run] Unsupported mode: $Mode"

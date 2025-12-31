@@ -98,7 +98,7 @@ try {
 
     # --- 1. Run HlkxTool parse ---
     Write-Host "[Submit] Parsing HLKX..."
-    $argLine = "parse " + (Quote-Arg $localHlkxPath)
+    $argLine = "parse --hlkx " + (Quote-Arg $localHlkxPath)
 
     $p = Start-Process -FilePath $hlkxTool -ArgumentList $argLine -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $tempDir "parse.stdout") -RedirectStandardError (Join-Path $tempDir "parse.stderr")
     $p.WaitForExit()
