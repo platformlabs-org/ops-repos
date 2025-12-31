@@ -8,7 +8,7 @@ jobs:
   whql-submit:
     # 1. 评论内容以 /submit 开头
     # 2. Issue 必须包含 WHQL 标签
-    if: startsWith(gitea.event.comment.body, '/submit') && contains(join(gitea.event.issue.labels.*.name, ','), 'WHQL')
+    if: startsWith(gitea.event.comment.body, '/submit')
     runs-on: RUNNER-WHQL
 
     steps:
