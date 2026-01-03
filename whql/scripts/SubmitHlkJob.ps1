@@ -55,10 +55,12 @@ try {
 
     # --- SIGN Request Override Logic ---
     $comments = $null
+    $isSignRequest = $false
     $signRequestOption = $config.SignRequestOption
     if ([string]::IsNullOrWhiteSpace($signRequestOption)) { $signRequestOption = "hlkx_sign_request" }
 
     if ($driverProject -eq $signRequestOption) {
+        $isSignRequest = $true
         Write-Host "[Submit] Detected SIGN Request Mode ($driverProject). Checking comments for override name..."
         $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
 
@@ -72,8 +74,13 @@ try {
                 $formalName = $overrideName
                 Write-Host "[Submit] Override Formal Name from comment: '$formalName'"
             } else {
-                Write-Host "[Submit] No override name found in comment. Using default: '$formalName'"
+                # Case 3: Fail if no submission name provided in SIGN mode
+                Write-Host "[Submit] No override name found in comment."
+                throw "MISSING_SIGN_NAME"
             }
+        } else {
+            # Case 3: Fail if no command found (unlikely here but safe)
+             throw "MISSING_SIGN_NAME"
         }
     }
 
@@ -145,7 +152,13 @@ try {
     $pcToken = Get-PartnerCenterToken -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
 
     # --- 3. Create Product ---
-    $fullName = "$formalName $driverVersion"
+    $fullName = ""
+    if ($isSignRequest) {
+        $fullName = $formalName
+    } else {
+        $fullName = "$formalName $driverVersion"
+    }
+
     Write-Host "[Submit] Creating Product: $fullName"
 
     $newProduct = New-Product `
@@ -200,8 +213,14 @@ try {
 catch {
     $errorMsg = $_.Exception.Message
     Write-Host "::error::$errorMsg"
+
+    $failMessage = "❌ **Submission Failed**`n`nError: $errorMsg"
+
+    if ($errorMsg -match "MISSING_SIGN_NAME") {
+        $failMessage = "❌ **Submission Failed**`n`nWhen using `hlkx_sign_request`, you must provide a Submission Name in your command.`n`nExample: `/submit MyDriverName`"
+    }
+
     try {
-        $failMessage = "❌ **Submission Failed**`n`nError: $errorMsg"
         New-OpsIssueComment -Repo $Repository -Number $IssueNumber -Token $AccessToken -BodyText $failMessage | Out-Null
     } catch {
         Write-Host "Failed to post error comment: $($_.Exception.Message)"
