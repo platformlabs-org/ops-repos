@@ -90,33 +90,20 @@ try {
     $selectedHlkxUrl  = $null
     $selectedFrom     = $null
 
-    $issueHlkx = Get-LatestHlkxFromIssueAssets -Issue $issue
-    if ($issueHlkx) {
-        $selectedHlkxName = $issueHlkx.name
-        $selectedHlkxUrl  = $issueHlkx.browser_download_url
-        $selectedFrom     = "issue.assets"
-        Write-Host "[Submit] HLKX selected from issue.assets: $selectedHlkxName"
-    } else {
-        if ($null -eq $comments) {
-            $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
-        }
-        $submitAtRaw = Get-LatestSubmitCommandTime -Comments $comments
-        $cutoff = $null
-        if ($submitAtRaw) {
-            try { $cutoff = [DateTime]$submitAtRaw } catch { $cutoff = $null }
-        }
+    if ($null -eq $comments) {
+        $comments = Get-OpsIssueComments -Repo $Repository -Number $IssueNumber -Token $AccessToken
+    }
 
-        $latestBotHlkx = Get-LatestHlkxFromBotComments -Comments $comments -CutoffTime $cutoff
-        if ($latestBotHlkx) {
-            $selectedHlkxName = $latestBotHlkx.Name
-            $selectedHlkxUrl  = $latestBotHlkx.Url
-            $selectedFrom     = "bot comments (commentId=$($latestBotHlkx.CommentId), assetId=$($latestBotHlkx.AssetId))"
-            Write-Host "[Submit] HLKX selected from $selectedFrom : $selectedHlkxName"
-        }
+    $latestCommentHlkx = Get-LatestHlkxFromComments -Comments $comments
+    if ($latestCommentHlkx) {
+        $selectedHlkxName = $latestCommentHlkx.Name
+        $selectedHlkxUrl  = $latestCommentHlkx.Url
+        $selectedFrom     = "comments (commentId=$($latestCommentHlkx.CommentId), assetId=$($latestCommentHlkx.AssetId))"
+        Write-Host "[Submit] HLKX selected from $selectedFrom : $selectedHlkxName"
     }
 
     if ([string]::IsNullOrWhiteSpace($selectedHlkxName) -or [string]::IsNullOrWhiteSpace($selectedHlkxUrl)) {
-        throw "No HLKX found. Please attach a .hlkx to the issue OR ensure the workflow posts it as a bot comment attachment."
+        throw "No HLKX attachment found in comments. Please ensure an HLKX file is attached to a comment (not the issue body) before submitting."
     }
 
     $tempDir = Join-Path (Get-Location) "temp\submit_downloads"
