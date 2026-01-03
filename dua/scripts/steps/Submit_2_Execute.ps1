@@ -79,10 +79,32 @@ try {
         }
     }
 
+    # Validate Project Name if provided
+    $mappingFile = Join-Path $RepoRoot "config\mapping\product_routing.json"
+
+    if ($projectName) {
+        $infRulesPath = Join-Path $RepoRoot "config\inf_patch_rules.json"
+        $infRules = if (Test-Path -LiteralPath $infRulesPath) { Get-Content -Raw -LiteralPath $infRulesPath | ConvertFrom-Json } else { $null }
+
+        # Legacy logic check: if in inf_patch_rules, it's valid
+        $isLegacy = ($infRules -and $infRules.project -and $infRules.project."$projectName")
+
+        if (-not $isLegacy) {
+            # Not legacy, must match product routing
+            try {
+                $null = Select-Pipeline -ProductName $projectName -MappingFile $mappingFile
+            } catch {
+                Write-Error "Routing failed for Project '$projectName': $_"
+                $msg = "⚠️ **Routing Failed**`n`nThe provided Project Name **$projectName** does not match any configured routing rules.`n`nPlease check your input or update `product_routing.json`."
+                Post-Comment -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Body $msg -Token $token | Out-Null
+                throw "Routing failed for Project '$projectName'."
+            }
+        }
+    }
+
     if (-not $projectName) { $projectName = "DriverUpdate" } # Fallback
 
     # Determine Strategy
-    $mappingFile = Join-Path $RepoRoot "config\mapping\product_routing.json"
     $infStrategy = try { Select-Pipeline -ProductName $originalSubmissionName -MappingFile $mappingFile } catch { $null }
 
     Write-Log "Detected Strategy: $infStrategy (Based on '$originalSubmissionName')"

@@ -95,7 +95,14 @@ if ($projectName -and $infRules -and $infRules.project -and $infRules.project."$
         # So we cover that case above.
 
         # If user GIVES Project Name, we respect it:
-        $infStrategy = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
+        try {
+            $infStrategy = Select-Pipeline -ProductName $projectName -MappingFile $productRoutingPath
+        } catch {
+            Write-Error "Routing failed for Project '$projectName': $_"
+            $msg = "⚠️ **Routing Failed**`n`nThe provided Project Name **$projectName** does not match any configured routing rules.`n`nPlease check your input or update `product_routing.json`."
+            Post-Comment -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber -Body $msg -Token $token | Out-Null
+            throw "Routing failed for Project '$projectName'."
+        }
     }
 }
 
