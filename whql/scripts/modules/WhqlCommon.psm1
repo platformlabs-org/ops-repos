@@ -89,26 +89,15 @@ function Get-LatestSubmitCommandTime {
     return $null
 }
 
-function Get-LatestHlkxFromBotComments {
+function Get-LatestHlkxFromComments {
     param(
-        [object[]]$Comments,
-        [Nullable[DateTime]]$CutoffTime = $null
+        [object[]]$Comments
     )
 
     if (-not $Comments -or $Comments.Count -eq 0) { return $null }
 
     $candidates = @()
     foreach ($comment in $Comments) {
-        $login = $comment.user.login
-        $uname = $comment.user.username
-        $isBot = ($login -eq "bot") -or ($uname -eq "bot") -or ($login -match "bot") -or ($uname -match "bot")
-        if (-not $isBot) { continue }
-
-        if ($CutoffTime -ne $null) {
-            $commentTime = try { [DateTime]$comment.created_at } catch { $null }
-            if ($commentTime -ne $null -and $commentTime -lt $CutoffTime.Value) { continue }
-        }
-
         if ($comment.assets) {
             foreach ($asset in $comment.assets) {
                 if ($asset.name -like "*.hlkx") {
@@ -121,6 +110,7 @@ function Get-LatestHlkxFromBotComments {
                         Url = $asset.browser_download_url
                         Created = $assetTime
                         CommentId = $comment.id
+                        AssetId = $asset.id
                         CommentBody = $comment.body
                     }
                 }
@@ -140,4 +130,4 @@ Export-ModuleMember -Function `
     Get-LatestHlkxFromIssueAssets, `
     Get-LatestSubmitCommand, `
     Get-LatestSubmitCommandTime, `
-    Get-LatestHlkxFromBotComments
+    Get-LatestHlkxFromComments
