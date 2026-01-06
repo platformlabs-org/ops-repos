@@ -57,13 +57,13 @@
           "dev_id": ["B080", "B081"],
           "subsys_id": ["235517AA"],
           "extension_id": "338707c7-284f-49a4-837f-647dc72f3c90"
-        },
-        "npu": {
-          "extension":{
-              "dev_id": ["B03E"],
-              "subsys_id": ["235517AA"],
-              "extension_id": "DB015529-BFF3-A335-033D-D5315BD9D7E2"
-          }
+        }
+      },
+      "npu": {
+        "extension": {
+          "dev_id": ["B03E"],
+          "subsys_id": ["235517AA"],
+          "extension_id": "DB015529-BFF3-A335-033D-D5315BD9D7E2"
         }
       }
     }
