@@ -15,7 +15,7 @@ jobs:
     runs-on: [RUNNER-WHQL]
     steps:
       - name: Checkout
-        uses: https://gitee.com/actions-mirror/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Check attachment format
         run: |
