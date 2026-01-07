@@ -204,7 +204,13 @@ catch {
     $failMessage = "❌ **Submission Failed**`n`nError: $errorMsg"
 
     if ($errorMsg -match "MISSING_SIGN_NAME") {
-        $failMessage = "❌ **Submission Failed**`n`nWhen using `hlkx_sign_request`, you must provide a Submission Name in your command.`n`nExample: `/submit MyDriverName`"
+        $failMessage = @"
+❌ **Submission Failed**
+
+When using `hlkx_sign_request`, you must provide a Submission Name in your command.
+
+Example: `/submit MyDriverName`
+"@
     }
 
     try {
