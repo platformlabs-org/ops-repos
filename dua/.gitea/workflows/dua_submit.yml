@@ -6,7 +6,7 @@ on:
 jobs:
   submit:
     if: startsWith(github.event.comment.body, '/submit')
-    runs-on: [RUNNER-WHQL]
+    runs-on: [RUNNER-HLK-26]
     env:
       GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
       PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}

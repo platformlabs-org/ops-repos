@@ -6,7 +6,7 @@ on:
 jobs:
   finish:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.base.ref, 'dua/issue-')
-    runs-on: [RUNNER-WHQL]
+    runs-on: [RUNNER-HLK-26]
     env:
       GITHUB_TOKEN: ${{ secrets.BOTTOKEN }}
       PARTNER_CENTER_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}

@@ -8,7 +8,7 @@ jobs:
   process-request:
     # Only process issues that match the template title pattern "[Request]: ..."
     if: startsWith(gitea.event.issue.title, '[Request]:')
-    runs-on: RUNNER-WHQL
+    runs-on: RUNNER-HLK-26
 
     steps:
       - name: Checkout repository

@@ -12,7 +12,7 @@ env:
 
 jobs:
   driver-sign:
-    runs-on: [RUNNER-WHQL]
+    runs-on: [RUNNER-HLK-26]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
