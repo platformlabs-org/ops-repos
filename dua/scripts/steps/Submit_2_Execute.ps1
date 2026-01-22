@@ -109,36 +109,11 @@ try {
 
     Write-Log "Detected Strategy: $infStrategy (Based on '$originalSubmissionName')"
 
-    $isExtTask = $infStrategy -match "-ext$"
+    # Standard Derived Submission
+    $newSubmissionName = "${originalSubmissionName}_${projectName}"
+    Write-Log "New Submission Name: $newSubmissionName"
 
-    $submission = $null
-    $newSubmissionName = ""
-
-    if ($isExtTask) {
-        Write-Log "Extension task detected. Skipping automatic submission due to API limitations."
-
-        $dashboardUrl = "https://partner.microsoft.com/en-us/dashboard/hardware/driver/$productId"
-        $msg = "⚠️ **无法自动提交**`n`n由于 API 限制，Extension 类型的驱动无法通过脚本自动创建新产品。`n请访问以下链接手动创建产品并提交：`n`n[前往 Partner Center]($dashboardUrl)"
-
-        Post-Comment `
-            -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
-            -Body $msg `
-            -Token $token | Out-Null
-
-        Set-IssueState `
-            -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
-            -State "closed" `
-            -Token $token | Out-Null
-
-        return
-    } else {
-        # Standard Derived Submission
-        $newSubmissionName = "${originalSubmissionName}_${projectName}"
-        Write-Log "New Submission Name: $newSubmissionName"
-
-        $submission = New-Submission -ProductId $productId -Token $pcToken -Name $newSubmissionName -Type "derived"
-    }
-
+    $submission = New-Submission -ProductId $productId -Token $pcToken -Name $newSubmissionName -Type "derived"
     $newSubmissionId = $submission.id
     Write-Log "Submission Created: $newSubmissionId"
 
@@ -218,5 +193,16 @@ try {
 
 } catch {
     Write-Error "Submission process failed: $_"
+
+    try {
+        $errorMsg = "❌ **Submission Failed**`n`nError: $($_.Exception.Message)"
+        Post-Comment `
+            -Owner $RepoOwner -Repo $RepoName -IssueNumber $IssueNumber `
+            -Body $errorMsg `
+            -Token $token | Out-Null
+    } catch {
+        Write-Warning "Failed to post error comment: $_"
+    }
+
     throw
 }
