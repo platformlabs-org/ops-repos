@@ -66,6 +66,15 @@
           "extension_id": "DB015529-BFF3-A335-033D-D5315BD9D7E2"
         }
       }
+    },
+    "bogda": {
+      "npu": {
+        "extension": {
+          "dev_id": ["AD1D"],
+          "subsys_id": ["380817AA"],
+          "extension_id": "04edb621-0421-48fe-afff-954a851cdb60"
+        }
+      }
     }
   }
 }
