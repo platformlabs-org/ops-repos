@@ -45,6 +45,13 @@
             ]
           }
         }
+      },
+      "npu": {
+        "extension":{
+            "dev_id": ["B03E"],
+            "subsys_id": ["380217AA"],
+            "extension_id": "2894ef33-7f17-4b92-aaa9-545a600dd414"
+        }
       }
     },
     "poseidon": {
