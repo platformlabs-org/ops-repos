@@ -47,3 +47,7 @@ jobs:
       - name: Issue update
         run: |
           pwsh ./scripts/steps/update-issue.ps1
+
+      - name: Notify User
+        run: |
+          pwsh ./scripts/steps/notify-user.ps1

@@ -137,13 +137,13 @@ function Add-Attachment {
         $form = @{ attachment = Get-Item -LiteralPath $FilePath }
         $resp = Invoke-RestMethod -Method Post -Uri $urlComment -Headers $headers -Form $form
         Write-Host "✅ 成功上传到评论附件: $FilePath"
-        return $true
+        return $resp
     } catch {
         $status = $_.Exception.Response.StatusCode.value__
         $body   = ""
         try { $sr = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream()); $body = $sr.ReadToEnd() } catch {}
         Write-Warning "⚠️ 传评论失败 ($status)。服务器返回: $body"
-        if ($status -ne 404) { return $false }  # 非 404 就别回退了
+        if ($status -ne 404) { return $null }  # 非 404 就别回退了
     }
 
     # 2) 回退：传到 issue 本体
@@ -152,13 +152,13 @@ function Add-Attachment {
         $form = @{ attachment = Get-Item -LiteralPath $FilePath }
         $resp = Invoke-RestMethod -Method Post -Uri $urlIssue -Headers $headers -Form $form
         Write-Host "✅ 成功上传到 Issue 附件: $FilePath"
-        return $true
+        return $resp
     } catch {
         $status = $_.Exception.Response.StatusCode.value__
         $body   = ""
         try { $sr = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream()); $body = $sr.ReadToEnd() } catch {}
         Write-Error "❌ 上传附件失败 ($status): $body"
-        return $false
+        return $null
     }
 }
 
@@ -178,11 +178,14 @@ function Add-CommentWithAttachments {
     $commentId = [int]$commentResponse.id
     Write-Host "✅ 成功发布评论: $commentId"
 
+    $uploadedAttachments = @()
     $ok = 0; $fail = 0
     foreach ($file in $FilePaths) {
         Write-Host "🔄 正在上传文件: $file"
-        if (Add-Attachment -RepoPath $RepoPath -IssueID $IssueID -CommentID $commentId -FilePath $file) {
+        $result = Add-Attachment -RepoPath $RepoPath -IssueID $IssueID -CommentID $commentId -FilePath $file
+        if ($result) {
             $ok++
+            $uploadedAttachments += $result
         } else {
             $fail++
         }
@@ -193,7 +196,12 @@ function Add-CommentWithAttachments {
     } else {
         Write-Warning "⚠️ 附件上传完成：成功 $ok 个，失败 $fail 个"
     }
-    return $commentId
+
+    # Return custom object with CommentId and Attachments
+    return @{
+        CommentId   = $commentId
+        Attachments = $uploadedAttachments
+    }
 }
 
 
