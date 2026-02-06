@@ -6,8 +6,13 @@ $issueId = $env:ISSUE_ID
 $fileUrl = $env:SIGNED_FILE_URL
 $fileName = $env:SIGNED_FILE_NAME
 
-# Placeholder URL as requested
-$notifyUrl = "http://placeholder-notification-url"
+# Use environment variable for webhook URL
+$notifyUrl = $env:SIGN_TEAMS_WEBHOOK_URL
+
+if (-not $notifyUrl) {
+    Write-Warning "SIGN_TEAMS_WEBHOOK_URL env not set, skipping notification."
+    exit 0
+}
 
 if (-not $issueId) {
     Write-Warning "ISSUE_ID not set, skipping notification."
