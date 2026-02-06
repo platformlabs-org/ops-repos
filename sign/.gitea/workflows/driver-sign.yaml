@@ -47,3 +47,9 @@ jobs:
       - name: Issue update
         run: |
           pwsh ./scripts/steps/update-issue.ps1
+
+      - name: Notify User
+        env:
+          SIGN_TEAMS_WEBHOOK_URL: ${{ secrets.SIGN_TEAMS_WEBHOOK_URL }}
+        run: |
+          pwsh ./scripts/steps/notify-user.ps1

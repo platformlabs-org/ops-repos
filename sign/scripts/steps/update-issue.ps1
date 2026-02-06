@@ -32,8 +32,25 @@ Write-Host "Uploading these files to issue:"
 $fileList | ForEach-Object { Write-Host "  - $_" }
 
 try {
-    Add-CommentWithAttachments -RepoPath $repo -IssueID $issueId -Comment $comment -FilePaths $fileList
+    $uploadResult = Add-CommentWithAttachments -RepoPath $repo -IssueID $issueId -Comment $comment -FilePaths $fileList
     Write-Host "✅ All files uploaded successfully."
+
+    # Extract first attachment
+    if ($uploadResult.Attachments -and $uploadResult.Attachments.Count -gt 0) {
+        $firstAtt = $uploadResult.Attachments[0]
+        $fileUrl = $firstAtt.browser_download_url
+        $fileName = $firstAtt.name
+
+        Write-Host "Exporting SIGNED_FILE_URL: $fileUrl"
+        Write-Host "Exporting SIGNED_FILE_NAME: $fileName"
+
+        if ($env:GITHUB_ENV) {
+            "SIGNED_FILE_URL=$fileUrl" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "SIGNED_FILE_NAME=$fileName" | Out-File -FilePath $env:GITHUB_ENV -Append
+        }
+    } else {
+        Write-Warning "No attachments found in upload result."
+    }
 } catch {
     Write-Host "❌ Failed to upload files to issue: $_"
     exit 1
