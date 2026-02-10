@@ -75,6 +75,25 @@
       }
     },
     "bogda": {
+      "gfx": {
+        "base": {
+          "dev_id": ["7D67"],
+          "subsys_id": ["3FA017AA"]
+        },
+        "extension": {
+          "dev_id": ["7D67"],
+          "subsys_id": ["3FA017AA"],
+          "extension_id": "B4A54B27-CF61-4A0A-82E8-6AD1CC673B82",
+          "register_function": {
+            "Brightness_Feature_AddSwSettings": [
+              ["ParadeMuxEdpLinkRateDataReloadTrigger", "d", 1],
+              ["LFP_NitRanges_FFFF", "d", 1],
+              ["LFP_NitRangeCount_09E55B0D710000002422", "d", "0x101"],
+              ["LFP_NitRanges_4c833242320000000023", "b", "8813000040EF0700E8030000"]
+            ]
+          }
+        }
+      },
       "npu": {
         "extension": {
           "dev_id": ["AD1D"],
