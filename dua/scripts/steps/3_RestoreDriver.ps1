@@ -33,6 +33,18 @@ New-Item -ItemType Directory -Force -Path $restoreDir | Out-Null
 Write-Log "Extracting original driver to $restoreDir"
 Expand-Archive-Force -Path $cachedDriver.FullName -DestinationPath $restoreDir
 
+# Remove unwanted files
+$unwantedFiles = @("iigd_ext_d.inf", "extinf_d.cat")
+foreach ($name in $unwantedFiles) {
+    $hits = Get-ChildItem -Path $restoreDir -Recurse -File -Filter $name -ErrorAction SilentlyContinue
+    if ($hits) {
+        foreach ($f in $hits) {
+            Write-Log "Deleting unwanted file: $($f.FullName)"
+            Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+        }
+    }
+}
+
 # 3. Overlay Modified INFs from Repo
 $repoWorkDir = Join-Path $RepoRoot "dua\driver_src"
 if (-not (Test-Path $repoWorkDir)) { throw "Modified INFs not found in repo at $repoWorkDir" }

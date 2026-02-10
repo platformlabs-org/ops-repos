@@ -35,6 +35,18 @@ $tempExtract = Join-Path $env:GITHUB_WORKSPACE "temp_extract_all"
 New-Item -ItemType Directory -Force -Path $tempExtract | Out-Null
 Expand-Archive-Force -Path $driverZip -DestinationPath $tempExtract
 
+# Remove unwanted files
+$unwantedFiles = @("iigd_ext_d.inf", "extinf_d.cat")
+foreach ($name in $unwantedFiles) {
+    $hits = Get-ChildItem -Path $tempExtract -Recurse -File -Filter $name -ErrorAction SilentlyContinue
+    if ($hits) {
+        foreach ($f in $hits) {
+            Write-Log "Deleting unwanted file: $($f.FullName)"
+            Remove-Item -LiteralPath $f.FullName -Force -ErrorAction Stop
+        }
+    }
+}
+
 # Load inf_locator.json to get target INF pattern
 $locatorConfigPath = Join-Path $RepoRoot "config\mapping\inf_locator.json"
 $locatorConfig = Get-Content -Raw -LiteralPath $locatorConfigPath | ConvertFrom-Json
