@@ -38,7 +38,7 @@ function Process-Inf {
     $extId = $Config.extension_id
     $regFuncs = $Config.register_function
 
-    $installSectionPatterns = @("PTL_.*IG$", "NPU_.*_Install$", "PTL_IG$")
+    $installSectionPatterns = @("PTL_.*IG$", "NPU_.*_Install$", "PTL_IG$", "ARLS_.*IG$", "MTL_.*IG$")
 
     foreach ($line in $lines) {
         $stripped = $line.Trim()
