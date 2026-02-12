@@ -38,7 +38,7 @@ function Process-Inf {
     $extId = $Config.extension_id
     $regFuncs = $Config.register_function
 
-    $installSectionPatterns = @("PTL_.*IG$", "NPU_.*_Install$", "PTL_IG$", "ARLS_.*IG$", "MTL_.*IG$")
+    $dynamicInstallSections = @()
 
     foreach ($line in $lines) {
         $stripped = $line.Trim()
@@ -69,6 +69,14 @@ function Process-Inf {
                     $output += $newLine
                 }
                 $matched = $true
+
+                # Capture dynamic install section
+                if ($line -match "=\s*([^,]+),") {
+                    $sec = $Matches[1].Trim()
+                    if ($sec -and $dynamicInstallSections -notcontains $sec) {
+                        $dynamicInstallSections += $sec
+                    }
+                }
             } else {
                 # Otherwise, match specific dev_ids
                 foreach ($dId in $devIds) {
@@ -82,6 +90,14 @@ function Process-Inf {
                             $output += $newLine
                         }
                         $matched = $true
+
+                        # Capture dynamic install section
+                        if ($line -match "=\s*([^,]+),") {
+                            $sec = $Matches[1].Trim()
+                            if ($sec -and $dynamicInstallSections -notcontains $sec) {
+                                $dynamicInstallSections += $sec
+                            }
+                        }
                         break
                     }
                 }
@@ -91,10 +107,10 @@ function Process-Inf {
         }
 
         # 3. Inject AddReg references
-        # Check if current section matches any install pattern
+        # Check if current section matches a dynamic section captured from HWID modification
         $isInstallSec = $false
-        foreach ($p in $installSectionPatterns) {
-            if ($currentSection -match $p) { $isInstallSec = $true; break }
+        if ($dynamicInstallSections -contains $currentSection) {
+            $isInstallSec = $true
         }
 
         if ($isInstallSec -and $stripped -eq "" -and $regFuncs) {
