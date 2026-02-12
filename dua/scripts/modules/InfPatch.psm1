@@ -38,7 +38,6 @@ function Process-Inf {
     $extId = $Config.extension_id
     $regFuncs = $Config.register_function
 
-    $installSectionPatterns = @("PTL_.*IG$", "NPU_.*_Install$", "PTL_IG$")
     $dynamicInstallSections = @()
 
     foreach ($line in $lines) {
@@ -108,16 +107,9 @@ function Process-Inf {
         }
 
         # 3. Inject AddReg references
-        # Check if current section matches any install pattern OR dynamic section
+        # Check if current section matches a dynamic section captured from HWID modification
         $isInstallSec = $false
-
-        # Check static patterns
-        foreach ($p in $installSectionPatterns) {
-            if ($currentSection -match $p) { $isInstallSec = $true; break }
-        }
-
-        # Check dynamic sections
-        if (-not $isInstallSec -and $dynamicInstallSections -contains $currentSection) {
+        if ($dynamicInstallSections -contains $currentSection) {
             $isInstallSec = $true
         }
 
