@@ -89,7 +89,7 @@
               ["ParadeMuxEdpLinkRateDataReloadTrigger", "d", 1],
               ["LFP_NitRanges_FFFF", "d", 1],
               ["LFP_NitRangeCount_09E55B0D710000002422", "d", "0x101"],
-              ["LFP_NitRanges_4c833242320000000023", "b", "8813000040EF0700E8030000"]
+              ["LFP_NitRanges_09E55B0D710000002422", "b", "8813000040EF0700E8030000"]
             ]
           }
         }
