@@ -12,8 +12,8 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: https://gitea.com/actions/checkout@v4
-        
+        uses: actions/checkout@v4
+
       - name: Prepare Job
         id: prepare
         shell: pwsh
