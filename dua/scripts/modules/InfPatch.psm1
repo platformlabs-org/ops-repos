@@ -46,6 +46,14 @@ function Process-Inf {
         # Identify Section
         if ($stripped -match "^\[.*\]$") {
             $currentSection = $stripped.Trim("[", "]").Split(" ")[0]
+            $output += $line
+
+            if ($dynamicInstallSections -contains $currentSection -and $regFuncs) {
+                foreach ($key in $regFuncs.PSObject.Properties.Name) {
+                    $output += "AddReg = $key"
+                }
+            }
+            continue
         }
 
         # 1. Replace ExtensionId
@@ -104,19 +112,6 @@ function Process-Inf {
             }
             
             if ($matched) { continue }
-        }
-
-        # 3. Inject AddReg references
-        # Check if current section matches a dynamic section captured from HWID modification
-        $isInstallSec = $false
-        if ($dynamicInstallSections -contains $currentSection) {
-            $isInstallSec = $true
-        }
-
-        if ($isInstallSec -and $stripped -eq "" -and $regFuncs) {
-            foreach ($key in $regFuncs.PSObject.Properties.Name) {
-                $output += "AddReg = $key"
-            }
         }
 
         $output += $line
