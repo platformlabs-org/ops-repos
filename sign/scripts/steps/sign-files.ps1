@@ -46,10 +46,7 @@ Write-Host "🔍 Searching for files in: $targetDir"
 
 # ===== 4. 查找目标文件 =====
 $extensions = @('*.dll', '*.sys', '*.exe')
-$files = @()
-foreach ($ext in $extensions) {
-    $files += Get-ChildItem -Path $targetDir -Recurse -Filter $ext -File
-}
+$files = Get-ChildItem -LiteralPath $targetDir -Recurse -Include $extensions -File
 if ($files.Count -eq 0) {
     Write-Host "No target files found to sign in: $targetDir"
     exit 0

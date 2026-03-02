@@ -23,7 +23,7 @@ switch ($architecture.ToUpper()) {
 }
 
 # ==== 1. 查找所有 inf 并去重父目录 ====
-$infFiles = Get-ChildItem -Path $infDir -Recurse -Filter *.inf -File
+$infFiles = Get-ChildItem -LiteralPath $infDir -Recurse -Filter *.inf -File
 if (-not $infFiles -or $infFiles.Count -eq 0) {
     throw "No .inf files found in $infDir"
 }
@@ -68,7 +68,7 @@ if (-not $certificate) {
 }
 Write-Host "✔️  Using certificate: $($certificate.Subject)"
 
-$catFiles = Get-ChildItem -Path $infDir -Recurse -Filter *.cat -File
+$catFiles = Get-ChildItem -LiteralPath $infDir -Recurse -Filter *.cat -File
 if (-not $catFiles -or $catFiles.Count -eq 0) {
     throw "No .cat files found to sign in $infDir"
 }

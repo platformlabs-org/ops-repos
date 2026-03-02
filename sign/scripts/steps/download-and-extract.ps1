@@ -56,7 +56,7 @@ try {
 if (!(Test-Path $tempZip)) { throw "Downloaded zip file does not exist: $tempZip" }
 
 # === 4. 解压到WORKDIR（只清空子内容）===
-Get-ChildItem -Path $workDir -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+Get-ChildItem -LiteralPath $workDir -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 try {
     Expand-Archive -Path $tempZip -DestinationPath $workDir -Force
 } catch {
@@ -70,7 +70,7 @@ $signType = $env:SIGN_TYPE
 if ($signType -eq "Sign File") {
     Write-Host "Sign Type is 'Sign File', skipping INF check."
 } else {
-    $allInf = Get-ChildItem -Path $workDir -Recurse -Filter *.inf -File
+    $allInf = Get-ChildItem -LiteralPath $workDir -Recurse -Filter *.inf -File
     if (-not $allInf -or $allInf.Count -eq 0) { throw "No .inf file found in attachment!" }
 
     $shallowInf = $allInf | Sort-Object {
