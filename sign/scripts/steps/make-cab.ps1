@@ -46,7 +46,7 @@ Set-Content -Path $ddfFilePath -Value $ddfContent
 # ==== 追加所有文件到 DDF（driver前缀保持结构）====
 $driverDir = $infDir.TrimEnd('\')
 $relativePath = "driver"
-Get-ChildItem -Path $driverDir -Recurse -File | ForEach-Object {
+Get-ChildItem -LiteralPath $driverDir -Recurse -File | ForEach-Object {
     $absolutePath = $_.FullName
     $relativeFilePath = $absolutePath.Substring($driverDir.Length).TrimStart('\')
     $relativeFilePathInCab = Join-Path $relativePath $relativeFilePath

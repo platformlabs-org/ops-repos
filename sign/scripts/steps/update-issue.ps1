@@ -16,13 +16,13 @@ try {
 }
 
 # ====== 获取所有 .zip/.cab 文件 ======
-$fileList = Get-ChildItem -Path $outputDir -File | Where-Object {
+$fileList = Get-ChildItem -LiteralPath $outputDir -File | Where-Object {
     $_.Name -like '*.zip' -or $_.Name -like '*.cab'
 } | Select-Object -ExpandProperty FullName
 
 if (-not $fileList -or $fileList.Count -eq 0) {
     Write-Host "Files in OUTPUT_DIR:"
-    Get-ChildItem -Path $outputDir | ForEach-Object { Write-Host $_.FullName }
+    Get-ChildItem -LiteralPath $outputDir | ForEach-Object { Write-Host $_.FullName }
     throw "No .zip or .cab files found in OUTPUT_DIR to upload."
 }
 
