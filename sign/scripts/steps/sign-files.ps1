@@ -45,7 +45,7 @@ if (!(Test-Path $targetDir)) { throw "Target directory does not exist: $targetDi
 Write-Host "🔍 Searching for files in: $targetDir"
 
 # ===== 4. 查找目标文件 =====
-$extensions = @('*.dll', '*.sys', '*.exe', '*.cab')
+$extensions = @('*.dll', '*.sys', '*.exe', '*.cab', '*.bin')
 $files = Get-ChildItem -LiteralPath $targetDir -Recurse -Include $extensions -File
 if ($files.Count -eq 0) {
     Write-Host "No target files found to sign in: $targetDir"
