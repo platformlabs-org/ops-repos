@@ -36,11 +36,14 @@
               ["LFP_NitRanges_FFFF", "d", 1],
               ["LFP_NitRanges_4c833d423d0000000023", "b", "8813000020A10700E8030000"],
               ["LFP_NitRanges_4c833242320000000023", "b", "8813000040420F00E8030000"],
+              ["LFP_NitRanges_09e50538000000001f23", "b", "8813000040420F00E8030000"],
               ["LFP_NitRangeCount_4c833d423d0000000023", "d", "0x101"],
+              ["LFP_NitRangeCount_09e50538000000001f23", "d", "0x101"],
               ["LFP_NitRangeCount_4c833242320000000023", "d", "0x101"]
             ],
             "AddEdp10BitModeOverride": [
               ["OverrideOutputFormatPersistance_800050_4c833d423d0000000023", "b", "00000000010008000E00020002000000"],
+              ["OverrideOutputFormatPersistance_800050_09e50538000000001f23", "b", "00000000010008000E00020002000000"],
               ["OverrideOutputFormatPersistance_800050_4c833242320000000023", "b", "00000000010008000E00020002000000"]
             ]
           }
