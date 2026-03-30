@@ -1,0 +1,81 @@
+name: Sync Subdirectories From Targets
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: "Subdirectory to sync (all/whql/dua/sign/bsod/windows-update)"
+        required: false
+        default: "all"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-from-target:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dir: whql
+            repo: ops.platformlabs.lenovo.com/platform-drivers/whql
+          - dir: dua
+            repo: ops.platformlabs.lenovo.com/platform-drivers/dua
+          - dir: sign
+            repo: ops.platformlabs.lenovo.com/platform-drivers/sign
+          - dir: bsod
+            repo: ops.platformlabs.lenovo.com/operations/bsod
+          - dir: windows-update
+            repo: ops.platformlabs.lenovo.com/platform-drivers/windows-update
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pull from target repo and open PR to main
+        if: ${{ github.event.inputs.target_dir == 'all' || github.event.inputs.target_dir == matrix.dir || github.event.inputs.target_dir == '' }}
+        env:
+          USERNAME: bot
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+          TARGET_REPO: ${{ matrix.repo }}
+          DIR: ${{ matrix.dir }}
+          RUN_ID: ${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
+          BRANCH="sync/${DIR}-from-target-${RUN_ID}"
+
+          WORK_DIR=$(mktemp -d)
+          git clone "$REMOTE_URL" "$WORK_DIR"
+
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+
+          git checkout -B "$BRANCH"
+
+          mkdir -p "$DIR"
+          find "$DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -r "$WORK_DIR"/. "$DIR"/
+          rm -rf "$DIR/.git"
+
+          git add "$DIR"
+
+          if git diff --cached --quiet; then
+            echo "No changes detected for $DIR."
+            exit 0
+          fi
+
+          git commit -m "sync(${DIR}): update from target repo"
+          git push origin "$BRANCH"
+
+          PR_TITLE="sync(${DIR}): update from target repo"
+          PR_BODY="Automated sync from ${TARGET_REPO}. Source run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY"
