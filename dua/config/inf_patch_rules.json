@@ -120,6 +120,15 @@
           "extension_id": "04edb621-0421-48fe-afff-954a851cdb60"
         }
       }
+    },
+    "hetian2": {
+      "npu": {
+        "extension": {
+          "dev_id": ["7D1D"],
+          "subsys_id": ["380617AA"],
+          "extension_id": "0d3133f2-e64c-4136-bfd5-00375ee35c2a"
+        }
+      }
     }
   }
 }
