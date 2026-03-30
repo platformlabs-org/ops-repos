@@ -1,13 +1,18 @@
-name: Sync Subdirectories
+name: Sync Subdirectories To Targets
 
 on:
-  push:
-    branches:
-      - main
-      - master
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: "Subdirectory to sync (all/whql/dua/sign/bsod/windows-update)"
+        required: false
+        default: "all"
+
+permissions:
+  contents: read
 
 jobs:
-  sync:
+  sync-to-target:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,14 +28,17 @@ jobs:
           - dir: windows-update
             repo: ops.platformlabs.lenovo.com/platform-drivers/windows-update
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Sync to remote
+      - name: Sync to target repo and create PR
+        if: ${{ github.event.inputs.target_dir == 'all' || github.event.inputs.target_dir == matrix.dir || github.event.inputs.target_dir == '' }}
         env:
           USERNAME: bot
           TOKEN: ${{ secrets.SYNC_TOKEN }}
           TARGET_REPO: ${{ matrix.repo }}
           DIR: ${{ matrix.dir }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
 
@@ -39,35 +47,46 @@ jobs:
             exit 0
           fi
 
-          echo "Syncing $DIR to $TARGET_REPO"
-
           WORK_DIR=$(mktemp -d)
           REMOTE_URL="https://${USERNAME}:${TOKEN}@${TARGET_REPO}"
+          API_BASE="https://${USERNAME}:${TOKEN}@${TARGET_REPO%%/*}/api/v1"
+          OWNER_REPO="${TARGET_REPO#*/}"
+          OWNER="${OWNER_REPO%%/*}"
+          REPO_NAME="${OWNER_REPO##*/}"
+          BRANCH="sync/${DIR}-from-monorepo-${RUN_ID}"
 
-          echo "Pulling from $TARGET_REPO"
+          echo "Cloning ${TARGET_REPO}"
           git clone "$REMOTE_URL" "$WORK_DIR"
           cd "$WORK_DIR"
 
-          git config user.email "i@terry.ee"
-          git config user.name "tianyi"
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
 
-          git checkout main 2>/dev/null || git checkout -b main
+          git checkout -B "$BRANCH" origin/main
 
-          echo "Removing all existing files..."
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-
-          echo "Copying files from $DIR"
           cp -r "${GITHUB_WORKSPACE}/$DIR"/. .
 
           git add -A
-
           if git diff --cached --quiet; then
-            echo "No changes detected. Skipping commit and push."
+            echo "No changes detected for $DIR."
             exit 0
           fi
 
-          echo "Changes detected. Committing and pushing..."
-          git commit -m "Sync from remote repository"
+          git commit -m "sync(${DIR}): update from monorepo"
+          git push "$REMOTE_URL" "$BRANCH"
 
-          echo "Pushing to $TARGET_REPO"
-          git push "$REMOTE_URL" HEAD:main
+          PR_TITLE="sync(${DIR}): update from monorepo"
+          PR_BODY="Automated sync from ${GITHUB_REPOSITORY}/${DIR}. Source run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+
+          EXISTING=$(curl -sS "$API_BASE/repos/$OWNER/$REPO_NAME/pulls?state=open&base=main&head=$OWNER:$BRANCH" | jq 'length')
+          if [ "$EXISTING" != "0" ]; then
+            echo "PR already exists for ${OWNER}/${REPO_NAME}:${BRANCH}"
+            exit 0
+          fi
+
+          curl -sS -X POST "$API_BASE/repos/$OWNER/$REPO_NAME/pulls" \
+            -H "Content-Type: application/json" \
+            -d "{\"title\":\"${PR_TITLE}\",\"head\":\"${BRANCH}\",\"base\":\"main\",\"body\":\"${PR_BODY}\"}" >/dev/null
+
+          echo "PR created for ${OWNER}/${REPO_NAME}"
